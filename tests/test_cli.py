@@ -90,5 +90,55 @@ class Dispatch(unittest.TestCase):
         self.assertEqual(board["applied"][0]["id"], 1)
 
 
+class Errors(unittest.TestCase):
+    def setUp(self) -> None:
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.dir = Path(directory.name)
+        self.db_path = str(self.dir / "jat.db")
+        self.invoke("init")
+
+    def invoke(self, *args: str) -> tuple[int, str]:
+        stderr = io.StringIO()
+        with redirect_stdout(io.StringIO()), redirect_stderr(stderr):
+            code = cli.main(["--db", self.db_path, *args])
+        return code, stderr.getvalue().strip()
+
+    def run_fail(self, *args: str) -> str:
+        code, stderr = self.invoke(*args)
+        self.assertEqual(code, 1)
+        return stderr
+
+    def test_apply_to_missing_role_is_a_clean_error(self) -> None:
+        message = self.run_fail("apply", "--role-id", "999")
+        self.assertEqual(message, "jat: error: role 999 does not exist")
+
+    def test_status_on_missing_application_is_a_clean_error(self) -> None:
+        self.assertIn("application 999 does not exist", self.run_fail("app", "status", "999", "offer"))
+
+    def test_import_missing_file_is_a_clean_error(self) -> None:
+        message = self.run_fail("import", str(self.dir / "nope.csv"))
+        self.assertIn("cannot read", message)
+        self.assertIn("no such file", message)
+
+    def test_import_into_populated_database_is_blocked(self) -> None:
+        self.invoke("role", "add", "--company", "Acme", "--title", "Eng")
+        self.invoke("apply", "--role-id", "1")
+        csv_path = self.dir / "seed.csv"
+        csv_path.write_text(
+            "Position,Company,Location,Job Link,Applied?,Date Applied,Status,Interest Level,Notes\n"
+            "Eng,Acme,Remote,,Yes,07/03,Applied,High,\n",
+            encoding="utf-8",
+        )
+        self.assertIn("--force", self.run_fail("import", str(csv_path)))
+
+    def test_interview_for_missing_application_is_a_clean_error(self) -> None:
+        self.assertIn("application 999 not found", self.run_fail("interview", "add", "999", "--kind", "technical"))
+
+    def test_success_still_returns_zero(self) -> None:
+        code, _ = self.invoke("role", "add", "--company", "Acme", "--title", "Eng")
+        self.assertEqual(code, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

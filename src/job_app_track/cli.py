@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sqlite3
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -182,8 +183,30 @@ def _database_path(raw: str | None) -> Path:
     return Path(raw).expanduser() if raw is not None else db.default_db_path()
 
 
+# Errors that mean the user asked for something impossible, not that the tool is
+# broken. They print one stderr line and exit 1; everything else keeps its
+# traceback.
+_USER_ERRORS = (ValueError, sqlite3.IntegrityError, FileNotFoundError, importer.ImportBlocked)
+
+
+def _user_error_message(exc: Exception) -> str:
+    if isinstance(exc, FileNotFoundError):
+        return f"cannot read {exc.filename}: {(exc.strerror or 'no such file').lower()}"
+    if isinstance(exc, sqlite3.IntegrityError):
+        return f"database rejected the change: {exc}"
+    return str(exc)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    try:
+        return _run(args)
+    except _USER_ERRORS as exc:
+        print(f"jat: error: {_user_error_message(exc)}", file=sys.stderr)
+        return 1
+
+
+def _run(args: argparse.Namespace) -> int:
     path = _database_path(args.db)
     if args.command == "init":
         with Store.open(path):

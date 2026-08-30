@@ -91,7 +91,7 @@ class ImportCsv(unittest.TestCase):
     def test_refuses_when_applications_exist(self) -> None:
         role = self.store.add_role(company="Acme", title="A")
         self.store.apply(role_id=role.id)
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(importer.ImportBlocked):
             importer.import_csv(self.store, self._write(self._header()))
 
     @staticmethod

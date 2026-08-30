@@ -30,6 +30,10 @@ INTEREST_FROM_CSV = {"": None, "high": "high", "medium": "medium", "low": "low"}
 
 DEFAULT_YEAR = 2026
 UNSPECIFIED_TITLE = "(unspecified)"
+
+
+class ImportBlocked(Exception):
+    """The target database already holds applications and force was not set."""
 CSV_FIELDS = (
     "Position",
     "Company",
@@ -90,7 +94,7 @@ def import_csv(store: Store, csv_path: str | Path, *, force: bool = False) -> in
     rows = _read_rows(csv_path)
     with store.tx():
         if not force and store.applications():
-            raise RuntimeError("refusing to import into a database with applications")
+            raise ImportBlocked("database already holds applications; pass --force to import anyway")
         for row in rows:
             store.add_company(row.company)
             role = store.add_role(
