@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web frontend plan</title>
+<style>
+/* ============================================================
+   Standard HTML house style for plans, audits, and design docs.
+   Deliberately project-agnostic: this never adopts a project's theme.
+   Plain document on a plain background. Legibility over decoration.
+   ============================================================ */
+
+:root {
+  --bg:        #fbfbf9;
+  --fg:        #1a1a1a;
+  --fg-muted:  #5c5c5c;
+  --rule:      #d4d4cf;
+  --surface:   #f0f0ec;
+  --link:      #0b4fa8;
+  --visited:   #6b3fa0;
+  --accent:    #8a5a00;
+  --good:      #1c6b2e;
+  --bad:       #a11b1b;
+  --measure:   72em;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:       #101010;
+    --fg:       #e6e6e3;
+    --fg-muted: #9a9a95;
+    --rule:     #3a3a3a;
+    --surface:  #1c1c1c;
+    --link:     #89a6ff;
+    --visited:  #d98cff;
+    --accent:   #e0a33a;
+    --good:     #52c96a;
+    --bad:      #ff6b52;
+  }
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg);
+  margin: 0;
+  padding: 2.5rem 1.25rem 6rem;
+}
+
+main, .doc {
+  max-width: var(--measure);
+  margin: 0;
+}
+
+h1, h2, h3, h4 {
+  line-height: 1.25;
+  font-weight: 600;
+  margin: 2.2em 0 0.6em;
+}
+h1 {
+  font-size: 1.9rem;
+  margin-top: 0;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--rule);
+}
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.1rem; }
+h4 { font-size: 1rem; color: var(--fg-muted); }
+
+.meta {
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+  margin: -0.2em 0 2.5em;
+}
+.meta > * + *::before { content: " · "; }
+
+p, ul, ol, dl, table, pre, blockquote { margin: 0 0 1.1em; }
+
+a          { color: var(--link); }
+a:visited  { color: var(--visited); }
+
+strong { font-weight: 600; }
+
+small, .muted { color: var(--fg-muted); font-size: 0.875rem; }
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 2.5em 0;
+}
+
+blockquote {
+  margin-left: 0;
+  padding: 0.1em 0 0.1em 1em;
+  border-left: 3px solid var(--rule);
+  color: var(--fg-muted);
+}
+
+ul, ol { padding-left: 1.4em; }
+li { margin: 0.25em 0; }
+li > ul, li > ol { margin: 0.25em 0; }
+
+code, kbd, samp, .path {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.875em;
+}
+
+code {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0.1em 0.3em;
+}
+
+.path { color: var(--fg-muted); }
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 0.75em 0.9em;
+  overflow-x: auto;
+  line-height: 1.45;
+}
+pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 0.8125rem;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9375rem;
+}
+th, td {
+  border: 1px solid var(--rule);
+  padding: 0.45em 0.7em;
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  background: var(--surface);
+  font-weight: 600;
+}
+
+.scroll { overflow-x: auto; margin: 0 0 1.1em; }
+.scroll table { margin: 0; }
+
+.note, .warn, .ok {
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--fg-muted);
+  background: var(--surface);
+  padding: 0.7em 0.9em;
+  margin: 0 0 1.1em;
+}
+.note > :last-child, .warn > :last-child, .ok > :last-child { margin-bottom: 0; }
+.warn { border-left-color: var(--accent); }
+.ok   { border-left-color: var(--good); }
+
+.note-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  margin-bottom: 0.3em;
+}
+
+.tag {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  padding: 0.05em 0.4em;
+  white-space: nowrap;
+  color: var(--fg-muted);
+}
+.tag-good { color: var(--good); }
+.tag-warn { color: var(--accent); }
+.tag-bad  { color: var(--bad); }
+
+ul.tasks { list-style: none; padding-left: 0; }
+ul.tasks li {
+  padding-left: 1.9em;
+  position: relative;
+  margin: 0.4em 0;
+}
+ul.tasks li::before {
+  position: absolute;
+  left: 0;
+  font-family: ui-monospace, Menlo, monospace;
+  color: var(--fg-muted);
+  content: "[ ]";
+}
+ul.tasks li[data-state="done"]::before { content: "[x]"; color: var(--good); }
+ul.tasks li[data-state="wip"]::before  { content: "[~]"; color: var(--accent); }
+ul.tasks li[data-state="done"] { color: var(--fg-muted); }
+
+dl { display: grid; grid-template-columns: minmax(8rem, max-content) 1fr; gap: 0.4em 1.2em; }
+dt { font-weight: 600; }
+dd { margin: 0; }
+
+.toc {
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  padding: 0.9em 1.1em;
+  margin: 0 0 2.2em;
+}
+.toc ol, .toc ul { list-style: none; padding-left: 0; margin: 0; }
+.toc li { margin: 0.15em 0; }
+.toc ol ol, .toc ul ul { padding-left: 1.1em; }
+.toc ol ol li, .toc ul ul li { font-size: 0.9375rem; }
+.toc a { text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+
+@media (min-width: 52rem) {
+  .toc > ol, .toc > ul { columns: 2; column-gap: 2.5em; }
+  .toc > ol > li, .toc > ul > li { break-inside: avoid; }
+}
+
+.backtotoc { font-size: 0.8125rem; color: var(--fg-muted); }
+
+.footer {
+  margin-top: 4rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  color: var(--fg-muted);
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 34rem) {
+  body { font-size: 16px; padding: 1.5rem 1rem 4rem; }
+  dl { grid-template-columns: 1fr; gap: 0.15em; }
+  dd { margin-bottom: 0.6em; }
+}
+
+@media print {
+  :root { --bg: #fff; --fg: #000; }
+  body { font-size: 11pt; }
+  a { color: #000; }
+}
+</style>
+</head>
+<body>
+<main>
+
+<h1>Web frontend plan</h1>
+<p class="meta"><span>2026-08-29</span><span>job-app-track @ 989e8e9</span><span>Design and handoff</span></p>
+
+<p>The web frontend is a second frontend over the same <code>Store</code> the CLI
+uses. This session landed a running skeleton: a stdlib <code>http.server</code>
+bound to a route table, Jinja2 templates packaged with the wheel, a
+<code>jat serve</code> command, htmx 4.0.0 vendored, and the pipeline board as
+the one worked example. Every other route is registered and returns
+<code>501</code> until its handler is written. The next agent fills in the
+handlers and templates for full CLI parity, using htmx 4.0 for the interactive
+parts. Nothing in <code>core/</code> needs to change; the Store contract already
+carries this.</p>
+
+<h2>What runs today</h2>
+
+<div class="ok">
+  <span class="note-label">Verified</span>
+  <code>jat serve</code> boots, opens the database once, and serves. <code>GET /</code>
+  renders the pipeline board from live data. <code>GET /</code> with an
+  <code>HX-Request</code> header returns just the board fragment. Static assets
+  serve with correct content types. Unknown paths are 404, wrong method is 405,
+  path traversal on <span class="path">/static/</span> is refused. The wheel
+  contains the templates and the vendored htmx file. 74 tests pass.
+</div>
+
+<pre><code>jat serve                       # http://127.0.0.1:8765
+jat serve --host 0.0.0.0 --port 9000
+jat --db /tmp/demo.db serve     # same --db / $JAT_DB resolution as every command</code></pre>
+
+<h2>Architecture</h2>
+
+<dl>
+  <dt>Seam</dt>
+  <dd>Route handlers call <code>Store</code> methods and pass the frozen
+  dataclasses straight to a template. The web layer adds no domain logic. This
+  is the same seam the CLI crosses.</dd>
+
+  <dt>Concurrency</dt>
+  <dd>Single-threaded <code>HTTPServer</code>. One SQLite connection, requests
+  served one at a time. Correct for one user on a private network, and it means
+  no connection pool and no thread-safety questions. If a later need forces
+  concurrency, the change is a Store per request, not a shared connection across
+  threads.</dd>
+
+  <dt>Templating</dt>
+  <dd>Jinja2, the one runtime dependency added for this layer. Autoescape is on.
+  <code>PackageLoader</code> reads from <span class="path">web/templates/</span>,
+  which the wheel packages via <span class="path">pyproject.toml</span>
+  <code>artifacts</code>.</dd>
+
+  <dt>Verbs</dt>
+  <dd>GET and POST only. Forms post; there is no PUT or DELETE. htmx 4 can issue
+  any method over <code>fetch()</code>, but forms plus POST cover every CLI
+  mutation and keep the handler side simple. Adding a verb later is one
+  <code>do_VERB</code> method in <span class="path">web/server.py</span>.</dd>
+</dl>
+
+<h3>Module map</h3>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>File</th><th>Holds</th><th>Depends on</th></tr></thead>
+  <tbody>
+    <tr><td><span class="path">web/http.py</span></td><td><code>Request</code>, <code>Response</code>, <code>Route</code>, <code>dispatch()</code>. Transport only, no domain knowledge.</td><td>stdlib, <code>core.Store</code> type, <code>importer.ImportBlocked</code></td></tr>
+    <tr><td><span class="path">web/render.py</span></td><td>The Jinja2 <code>Environment</code> and <code>page()</code> / <code>fragment()</code>.</td><td>jinja2, <code>web.http.Response</code></td></tr>
+    <tr><td><span class="path">web/routes.py</span></td><td>One handler per route and the <code>ROUTES</code> table.</td><td><code>web.http</code>, <code>web.render</code>, <code>core</code></td></tr>
+    <tr><td><span class="path">web/server.py</span></td><td><code>BaseHTTPRequestHandler</code> subclass and <code>make_server()</code>. Reads a request, calls <code>dispatch()</code>, writes the <code>Response</code>.</td><td><code>web.http</code>, <code>web.routes</code></td></tr>
+    <tr><td><span class="path">web/__init__.py</span></td><td><code>serve()</code>: open the Store, run the loop, exit on Ctrl-C.</td><td><code>web.server</code>, <code>core</code></td></tr>
+    <tr><td><span class="path">web/templates/</span></td><td><code>base.html</code>, <code>pipeline.html</code>, <code>_board.html</code>. Fragments are prefixed with an underscore by convention.</td><td></td></tr>
+    <tr><td><span class="path">web/static/</span></td><td><code>htmx-4.0.0.min.js</code> (vendored, 36716 bytes), <code>app.css</code>.</td><td></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>No import cycles. <span class="path">http.py</span> and
+<span class="path">render.py</span> import nothing else from the package.
+<span class="path">routes.py</span> is the only file that touches both the
+transport types and the Store.</p>
+
+<h2>The handler contract</h2>
+
+<p>A handler takes a <code>Request</code> and returns a <code>Response</code>.
+<code>dispatch()</code> matches <code>method</code> plus <code>path</code> against
+<code>ROUTES</code>, builds the <code>Request</code>, and calls the handler.</p>
+
+<pre><code>@dataclass(frozen=True, slots=True)
+class Request:
+    method: str
+    path: str
+    params: dict[str, str]   # captured from the pattern, e.g. {"id": "4"}
+    query: dict[str, str]    # first value per key
+    form: dict[str, str]     # parsed x-www-form-urlencoded body
+    headers: Mapping[str, str]
+    store: Store
+    @property
+    def is_htmx(self) -&gt; bool   # HX-Request header is "true"
+
+@dataclass(frozen=True, slots=True)
+class Response:
+    body: str = ""
+    status: int = 200
+    headers: dict[str, str] = {}
+    @classmethod
+    def html(body, status=200) -&gt; Response
+    @classmethod
+    def redirect(location) -&gt; Response    # 303
+    @classmethod
+    def text(body, status) -&gt; Response
+
+@dataclass(frozen=True, slots=True)
+class Route:
+    method: str
+    pattern: str    # "/applications/&lt;int:id&gt;", also &lt;str:name&gt;
+    handler: Callable[[Request], Response]</code></pre>
+
+<p>Pattern captures are <code>&lt;int:name&gt;</code> and
+<code>&lt;str:name&gt;</code>. An <code>int</code> capture that does not match
+<code>\d+</code> falls through to 404, so a bad id never reaches a handler.</p>
+
+<h3>Read handlers</h3>
+
+<p>Branch on <code>req.is_htmx</code>. A normal navigation returns
+<code>page(...)</code>, a full document. An htmx request returns
+<code>fragment(...)</code>, the same inner markup with no chrome, so the client
+can swap it in place. <code>pipeline()</code> in
+<span class="path">web/routes.py</span> is the pattern to copy: it renders
+<code>pipeline.html</code> for a navigation and <code>_board.html</code> for a
+swap, and <code>pipeline.html</code> just <code>{% include "_board.html" %}</code>.</p>
+
+<h3>Write handlers</h3>
+
+<p>Read <code>req.form</code>, call the Store method, then return the swapped
+fragment for an htmx caller or <code>Response.redirect(...)</code> for a plain
+form post. Use the enum tuples in <span class="path">core/enums.py</span> to
+build <code>&lt;select&gt;</code> options and to keep the template honest about
+valid values.</p>
+
+<h3>Errors mirror the CLI</h3>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Handler raises</th><th>Response</th><th>Source</th></tr></thead>
+  <tbody>
+    <tr><td><code>ValueError</code></td><td>400, message as the body</td><td>Store rejects bad input</td></tr>
+    <tr><td><code>LookupError</code> (incl. <code>KeyError</code>)</td><td>404, message as the body</td><td>missing row</td></tr>
+    <tr><td><code>ImportBlocked</code></td><td>409</td><td>importer precondition</td></tr>
+    <tr><td><code>sqlite3.IntegrityError</code></td><td>400</td><td>constraint violation</td></tr>
+    <tr><td>anything else</td><td>propagates: 500 and a traceback in the server log</td><td>a real defect</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>This is the same split as <code>cli._USER_ERRORS</code>. Expected failures are
+concise, unexpected ones stay loud. For an htmx request the 4xx body should be a
+small fragment so the message lands in the page; handlers own that framing.</p>
+
+<h2>Routes</h2>
+
+<p>The table below is <code>ROUTES</code> in
+<span class="path">web/routes.py</span>, in order. Full CLI parity is the target.
+<span class="tag tag-good">done</span> handlers are written and tested.
+<span class="tag tag-warn">stub</span> handlers are registered and return 501.</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Handler</th><th>Status</th><th>CLI equivalent</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td>/</td><td><code>pipeline</code></td><td><span class="tag tag-good">done</span></td><td><code>jat pipeline</code></td></tr>
+    <tr><td>GET</td><td>/static/&lt;str:name&gt;</td><td><code>static</code></td><td><span class="tag tag-good">done</span></td><td>n/a</td></tr>
+    <tr><td>GET</td><td>/applications</td><td><code>application_index</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat app list [--status] [--company]</code></td></tr>
+    <tr><td>GET</td><td>/applications/&lt;int:id&gt;</td><td><code>application_show</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat app show &lt;id&gt;</code></td></tr>
+    <tr><td>POST</td><td>/applications</td><td><code>application_apply</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat apply --role-id</code></td></tr>
+    <tr><td>POST</td><td>/applications/&lt;int:id&gt;/status</td><td><code>application_status</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat app status</code></td></tr>
+    <tr><td>POST</td><td>/applications/&lt;int:id&gt;/interest</td><td><code>application_interest</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat app interest</code></td></tr>
+    <tr><td>POST</td><td>/applications/&lt;int:id&gt;/note</td><td><code>application_note</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat app note</code></td></tr>
+    <tr><td>POST</td><td>/applications/&lt;int:id&gt;/contacts</td><td><code>contact_link</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat contact link</code></td></tr>
+    <tr><td>GET</td><td>/companies</td><td><code>company_index</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat company list</code></td></tr>
+    <tr><td>POST</td><td>/companies</td><td><code>company_create</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat company add</code></td></tr>
+    <tr><td>GET</td><td>/roles</td><td><code>role_index</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat role list [--company]</code></td></tr>
+    <tr><td>POST</td><td>/roles</td><td><code>role_create</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat role add</code></td></tr>
+    <tr><td>GET</td><td>/contacts</td><td><code>contact_index</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat contact list [--company]</code></td></tr>
+    <tr><td>POST</td><td>/contacts</td><td><code>contact_create</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat contact add</code></td></tr>
+    <tr><td>GET</td><td>/interviews</td><td><code>interview_index</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat interview list [--app] [--upcoming]</code></td></tr>
+    <tr><td>POST</td><td>/interviews</td><td><code>interview_create</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat interview add</code></td></tr>
+    <tr><td>POST</td><td>/interviews/&lt;int:id&gt;/outcome</td><td><code>interview_outcome</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat interview outcome</code></td></tr>
+    <tr><td>GET</td><td>/import</td><td><code>import_view</code></td><td><span class="tag tag-warn">stub</span></td><td>n/a</td></tr>
+    <tr><td>POST</td><td>/import</td><td><code>import_run</code></td><td><span class="tag tag-warn">stub</span></td><td><code>jat import &lt;csv&gt;</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><code>import_run</code> takes an uploaded file, so its request body is
+<code>multipart/form-data</code>, which <code>dispatch()</code> does not parse.
+Options: read the raw body in that one handler with
+<code>email.parser</code> or <code>cgi</code>-style splitting, or accept a server
+filesystem path in a text field and reuse <code>importer.import_csv</code>
+directly. Decide when you build it.</p>
+
+<h2>htmx 4.0</h2>
+
+<p>4.0.0 shipped on 2026-08-28, one day before this plan. It is a real major
+version with breaking changes, not a point release. The relevant points:</p>
+
+<dl>
+  <dt>Pin the version</dt>
+  <dd>2.x stays the npm <code>latest</code> tag until early 2027, so an
+  unversioned CDN URL serves 2.x. The file is vendored at
+  <span class="path">web/static/htmx-4.0.0.min.js</span> and referenced with the
+  version in the name. Keep it that way.</dd>
+
+  <dt>Explicit inheritance</dt>
+  <dd>Attributes like <code>hx-target</code> and <code>hx-swap</code> no longer
+  inherit to descendants by default. Put the attribute on the element that
+  makes the request, or add the <code>:inherited</code> suffix on the parent
+  where sharing is intended.</dd>
+
+  <dt>Event names</dt>
+  <dd>Standardised to <code>htmx:phase:action</code>, for example
+  <code>htmx:after:swap</code>. Matters only if you wire JS listeners.</dd>
+
+  <dt>Morph swaps</dt>
+  <dd>Built in via idiomorph. <code>hx-swap="morph"</code> on the board re-renders
+  after a status change without losing scroll position or focus. Good fit for
+  the pipeline and any list that swaps often.</dd>
+
+  <dt>&lt;hx-partial&gt;</dt>
+  <dd>The 4.0 replacement for hand-rolled out-of-band swaps. Use it to update the
+  nav counts alongside the main swap after a write.</dd>
+
+  <dt>History</dt>
+  <dd>Back-navigation re-fetches the page instead of restoring from
+  <code>localStorage</code>. No action needed here; every page is a cheap Store
+  read.</dd>
+</dl>
+
+<p>Docs for 4.0 are at <span class="path">four.htmx.org</span>, not
+<span class="path">htmx.org</span>. The team ships an upgrade-checker CLI and
+LLM skill files for migrating 2.x markup, which is worth a look if you copy
+snippets from older tutorials.</p>
+
+<h2>What this session delivered</h2>
+
+<ul class="tasks">
+  <li data-state="done">Design settled: stdlib server, Jinja2, single connection, GET and POST, full-parity route table.</li>
+  <li data-state="done"><span class="path">web/</span> package with the transport types, dispatch, server glue, and <code>serve()</code>.</li>
+  <li data-state="done"><code>jat serve --host --port</code>, resolving <code>--db</code> and <code>$JAT_DB</code> like every other command.</li>
+  <li data-state="done"><code>pipeline</code> and <code>static</code> handlers, <code>base.html</code>, <code>pipeline.html</code>, <code>_board.html</code>, <code>app.css</code>.</li>
+  <li data-state="done">htmx 4.0.0 vendored and served.</li>
+  <li data-state="done"><span class="path">pyproject.toml</span>: <code>jinja2</code> dependency, templates and static packaged in the wheel.</li>
+  <li data-state="done"><span class="path">tests/test_web.py</span>: dispatch matching, param typing, error mapping, the pipeline route both ways, static serving and traversal refusal, the serve parser.</li>
+</ul>
+
+<h2>Remaining work</h2>
+
+<ul class="tasks">
+  <li data-state="todo">Fill in the read handlers: <code>application_index</code> with the status and company filters, <code>application_show</code> with timeline, contacts, and interviews, then <code>company_index</code>, <code>role_index</code>, <code>contact_index</code>, <code>interview_index</code>.</li>
+  <li data-state="todo">Fill in the write handlers: apply, status, interest, note, contact create and link, role create, company create, interview create and outcome. Return the swapped fragment for htmx, redirect otherwise.</li>
+  <li data-state="todo">Build the templates each handler renders, with fragments split out for the swap targets.</li>
+  <li data-state="todo">Wire the htmx interactions: inline status change on the board with <code>hx-swap="morph"</code>, filter forms on the list views, add-forms that prepend a row, nav counts via <code>&lt;hx-partial&gt;</code>.</li>
+  <li data-state="todo">Decide the <code>import_run</code> body format and implement it.</li>
+  <li data-state="todo">Give 4xx responses an htmx-friendly fragment so Store rejections show in the page.</li>
+  <li data-state="todo">Extend <span class="path">tests/test_web.py</span> per handler, and add a test that walks a status change through <code>dispatch()</code> and asserts the returned fragment.</li>
+  <li data-state="todo">Add a "run the web app" section to <span class="path">notes/manual-testing.md</span> once the pages exist.</li>
+</ul>
+
+<h2>Conventions to hold</h2>
+
+<ul>
+  <li>Handlers stay thin. Any logic that is not "read the form, call the Store, pick a template" belongs in <code>core/</code>.</li>
+  <li>Fragment templates are named with a leading underscore.</li>
+  <li>Every enum-valued <code>&lt;select&gt;</code> is built from <span class="path">core/enums.py</span>, never a literal list in a template.</li>
+  <li>No new runtime dependency without asking. Jinja2 is the whole budget.</li>
+  <li>The web layer never imports from <span class="path">cli.py</span> and the CLI never imports from <span class="path">web/</span> except the one lazy <code>import</code> inside the <code>serve</code> branch.</li>
+</ul>
+
+<p class="footer">Sources: repository files under <span class="path">src/</span>,
+<span class="path">tests/</span>, and <span class="path">docs/</span>; the local
+handoff <span class="path">_audit.md</span>; <code>git</code> history; a live
+<code>jat serve</code> run exercised with <code>curl</code>; <code>uv build</code>
+wheel inspection; htmx 4.0.0 release notes at
+<span class="path">four.htmx.org/announcements/2026-08-28-htmx-4.0.0-is-released</span>.</p>
+
+</main>
+</body>
+</html>
