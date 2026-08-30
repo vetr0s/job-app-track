@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Repository audit</title>
+<style>
+/* ============================================================
+   Standard HTML house style for plans, audits, and design docs.
+   Deliberately project-agnostic: this never adopts a project's theme.
+   Plain document on a plain background. Legibility over decoration.
+   ============================================================ */
+
+:root {
+  --bg:        #fbfbf9;
+  --fg:        #1a1a1a;
+  --fg-muted:  #5c5c5c;
+  --rule:      #d4d4cf;
+  --surface:   #f0f0ec;
+  --link:      #0b4fa8;
+  --visited:   #6b3fa0;
+  --accent:    #8a5a00;
+  --good:      #1c6b2e;
+  --bad:       #a11b1b;
+  --measure:   72em;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:       #101010;
+    --fg:       #e6e6e3;
+    --fg-muted: #9a9a95;
+    --rule:     #3a3a3a;
+    --surface:  #1c1c1c;
+    --link:     #89a6ff;
+    --visited:  #d98cff;
+    --accent:   #e0a33a;
+    --good:     #52c96a;
+    --bad:      #ff6b52;
+  }
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg);
+  margin: 0;
+  padding: 2.5rem 1.25rem 6rem;
+}
+
+/* Left-justified, not centered: the document hugs the left gutter and simply
+   stops at the measure. */
+main, .doc {
+  max-width: var(--measure);
+  margin: 0;
+}
+
+/* --- headings ------------------------------------------------ */
+
+h1, h2, h3, h4 {
+  line-height: 1.25;
+  font-weight: 600;
+  margin: 2.2em 0 0.6em;
+}
+h1 {
+  font-size: 1.9rem;
+  margin-top: 0;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--rule);
+}
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.1rem; }
+h4 { font-size: 1rem; color: var(--fg-muted); }
+
+/* Byline directly under the h1: date, repo, commit, author. */
+.meta {
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+  margin: -0.2em 0 2.5em;
+}
+.meta > * + *::before { content: " · "; }
+
+/* --- prose --------------------------------------------------- */
+
+p, ul, ol, dl, table, pre, blockquote { margin: 0 0 1.1em; }
+
+a          { color: var(--link); }
+a:visited  { color: var(--visited); }
+
+strong { font-weight: 600; }
+
+small, .muted { color: var(--fg-muted); font-size: 0.875rem; }
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 2.5em 0;
+}
+
+blockquote {
+  margin-left: 0;
+  padding: 0.1em 0 0.1em 1em;
+  border-left: 3px solid var(--rule);
+  color: var(--fg-muted);
+}
+
+ul, ol { padding-left: 1.4em; }
+li { margin: 0.25em 0; }
+li > ul, li > ol { margin: 0.25em 0; }
+
+/* --- code ---------------------------------------------------- */
+
+code, kbd, samp, .path {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.875em;
+}
+
+code {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0.1em 0.3em;
+}
+
+/* File paths and identifiers: mono, but no box. */
+.path { color: var(--fg-muted); }
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 0.75em 0.9em;
+  overflow-x: auto;
+  line-height: 1.45;
+}
+pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 0.8125rem;
+}
+
+/* --- tables -------------------------------------------------- */
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9375rem;
+}
+th, td {
+  border: 1px solid var(--rule);
+  padding: 0.45em 0.7em;
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  background: var(--surface);
+  font-weight: 600;
+}
+
+/* Wide tables scroll inside their own box; the page never scrolls sideways. */
+.scroll { overflow-x: auto; margin: 0 0 1.1em; }
+.scroll table { margin: 0; }
+
+/* --- callouts ------------------------------------------------ */
+
+.note, .warn, .ok {
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--fg-muted);
+  background: var(--surface);
+  padding: 0.7em 0.9em;
+  margin: 0 0 1.1em;
+}
+.note > :last-child, .warn > :last-child, .ok > :last-child { margin-bottom: 0; }
+.warn { border-left-color: var(--accent); }
+.ok   { border-left-color: var(--good); }
+
+.note-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  margin-bottom: 0.3em;
+}
+
+/* --- status tags --------------------------------------------- */
+
+.tag {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  padding: 0.05em 0.4em;
+  white-space: nowrap;
+  color: var(--fg-muted);
+}
+.tag-good { color: var(--good); }
+.tag-warn { color: var(--accent); }
+.tag-bad  { color: var(--bad); }
+
+/* --- task lists ---------------------------------------------- */
+
+/* <ul class="tasks"> with <li data-state="done|wip|todo"> */
+ul.tasks { list-style: none; padding-left: 0; }
+ul.tasks li {
+  padding-left: 1.9em;
+  position: relative;
+  margin: 0.4em 0;
+}
+ul.tasks li::before {
+  position: absolute;
+  left: 0;
+  font-family: ui-monospace, Menlo, monospace;
+  color: var(--fg-muted);
+  content: "[ ]";
+}
+ul.tasks li[data-state="done"]::before { content: "[x]"; color: var(--good); }
+ul.tasks li[data-state="wip"]::before  { content: "[~]"; color: var(--accent); }
+ul.tasks li[data-state="done"] { color: var(--fg-muted); }
+
+/* --- definition list (decisions, key/value facts) ------------- */
+
+dl { display: grid; grid-template-columns: minmax(8rem, max-content) 1fr; gap: 0.4em 1.2em; }
+dt { font-weight: 600; }
+dd { margin: 0; }
+
+/* --- table of contents --------------------------------------- */
+
+/* <nav class="toc"> wrapping a nested <ol> or <ul> of in-page links. */
+.toc {
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  padding: 0.9em 1.1em;
+  margin: 0 0 2.2em;
+}
+.toc ol, .toc ul { list-style: none; padding-left: 0; margin: 0; }
+.toc li { margin: 0.15em 0; }
+.toc ol ol, .toc ul ul { padding-left: 1.1em; }
+.toc ol ol li, .toc ul ul li { font-size: 0.9375rem; }
+.toc a { text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+
+/* A long flat contents list reads better in columns once there is room. */
+@media (min-width: 52rem) {
+  .toc > ol, .toc > ul { columns: 2; column-gap: 2.5em; }
+  .toc > ol > li, .toc > ul > li { break-inside: avoid; }
+}
+
+/* Back-to-contents link at the foot of a section. */
+.backtotoc { font-size: 0.8125rem; color: var(--fg-muted); }
+
+/* --- footnotes / source trail -------------------------------- */
+
+.footer {
+  margin-top: 4rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  color: var(--fg-muted);
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 34rem) {
+  body { font-size: 16px; padding: 1.5rem 1rem 4rem; }
+  dl { grid-template-columns: 1fr; gap: 0.15em; }
+  dd { margin-bottom: 0.6em; }
+}
+
+@media print {
+  :root { --bg: #fff; --fg: #000; }
+  body { font-size: 11pt; }
+  a { color: #000; }
+}
+</style>
+</head>
+<body>
+<main>
+
+<h1>Repository audit</h1>
+<p class="meta"><span>2026-08-29</span><span>job-app-track @ a546316</span><span>Audit</span></p>
+
+<p>The repository has a sound small-project shape, but it is still a scaffold. The handoff describes the files well. Its transaction and migration recipes are unsafe. Resolve migration atomicity, nested transaction ownership, and role identity before implementing the first feature slice.</p>
+
+<h2>Scope</h2>
+
+<p>This audit covered the Python package, SQL migration, tests, packaging, CLI contract, <span class="path">_audit.md</span>, and <span class="path">docs/implementation-plan.html</span>. It excluded <span class="path">.venv/</span>, caches, build output, local databases, and the data values in the seed CSV. The importer contract and CSV mapping stayed in scope.</p>
+
+<h2>What's solid</h2>
+
+<div class="ok">
+  <span class="note-label">Checked</span>
+  The Store facade gives the CLI and planned web frontend one domain boundary. Frozen read models match the schema. Private SQL modules keep the facade from becoming a SQL monolith.
+</div>
+
+<ul>
+  <li>The initial migration creates the documented seven tables and six indexes at <span class="path">src/job_app_track/migrations/0001_init.sql:6</span>.</li>
+  <li>Foreign keys and delete actions cover each declared relationship at <span class="path">src/job_app_track/migrations/0001_init.sql:14</span>.</li>
+  <li>Constrained enum values match <span class="path">src/job_app_track/core/enums.py:7</span>, except for the status timeline finding below.</li>
+  <li>Migration discovery sorts numeric versions at <span class="path">src/job_app_track/core/db.py:42</span>. The wheel includes SQL files at <span class="path">pyproject.toml:16</span>.</li>
+  <li>The handoff accurately inventories the stubs and skipped tests at <span class="path">_audit.md:55</span>.</li>
+</ul>
+
+<h2>Findings</h2>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Status</th><th>Location</th><th>Finding and consequence</th><th>Required change</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag tag-warn">warning</span></td><td><span class="path">docs/implementation-plan.html:763</span><br><span class="path">_audit.md:299</span></td><td>The proposed migration runner wraps <code>executescript()</code> in <code>with conn</code>. The driver can commit before the script. A failed script left its first table behind while <code>user_version</code> stayed at zero in a runtime check.</td><td>Give each migration explicit transaction control. Add a test with a valid statement followed by an invalid one.</td></tr>
+    <tr><td><span class="tag tag-warn">warning</span></td><td><span class="path">src/job_app_track/core/store.py:48</span><br><span class="path">tests/test_applications.py:31</span></td><td><code>tx()</code> uses the connection context manager. The plan also puts transactions inside write methods. A nested runtime check committed both inserts before the outer exception. The promised multi-write rollback would fail.</td><td>Choose one transaction owner or implement savepoints with tested nesting semantics.</td></tr>
+    <tr><td><span class="tag tag-warn">warning</span></td><td><span class="path">src/job_app_track/migrations/0001_init.sql:14</span><br><span class="path">src/job_app_track/core/_companies.py:31</span></td><td>The schema permits duplicate titles for one company. The API exposes a singular lookup by company and title. Repeated postings become ambiguous and an application can attach to the wrong role.</td><td>Define role identity before writing company and application logic. Use an explicit role ID or add a uniqueness rule that matches intended imports.</td></tr>
+    <tr><td><span class="tag tag-warn">warning</span></td><td><span class="path">src/job_app_track/migrations/0001_init.sql:44</span></td><td>The authoritative status timeline lacks the status constraint used by <code>applications.status</code>. SQLite accepted an invalid timeline state in a direct check.</td><td>Add the constraint in a new migration or enforce one validated write path. Test the database invariant.</td></tr>
+    <tr><td><span class="tag tag-warn">warning</span></td><td><span class="path">src/job_app_track/core/store.py:35</span></td><td><code>Store.open()</code> does not close the connection when migration fails. A failed startup can retain a database handle and file lock.</td><td>Close the connection in the migration failure path and re-raise the error.</td></tr>
+    <tr><td><span class="tag tag-warn">warning</span></td><td><span class="path">tests/test_migrations.py:7</span></td><td>All 17 tests are skipped. The suite reports success without executing a migration or Store method.</td><td>Unskip tests with each implementation slice. Do not treat the current green result as behavioral verification.</td></tr>
+    <tr><td><span class="tag tag-warn">warning</span></td><td><span class="path">src/job_app_track/format.py:13</span><br><span class="path">docs/implementation-plan.html:843</span></td><td>The plan adds CLI read commands before the renderers. Those increments cannot be usable as claimed. The companies and roles slice also has no test module.</td><td>Move basic output and company or role tests into the first feature slice.</td></tr>
+    <tr><td><span class="tag tag-warn">warning</span></td><td><span class="path">src/job_app_track/cli.py:13</span><br><span class="path">docs/implementation-plan.html:696</span></td><td><code>--json</code> exists only on the root parser. Documented examples place it after subcommands, where argparse will reject it.</td><td>Choose one flag position and make the parser, examples, and tests agree.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Documentation drift</h2>
+
+<p><span class="path">_audit.md:7</span> says the ignore cleanup is uncommitted. Commit <code>a546316</code> contains it, and the worktree was clean at audit time. The implementation plan also calls the scaffold unfinished at <span class="path">docs/implementation-plan.html:284</span> and leaves models and enums pending at <span class="path">docs/implementation-plan.html:838</span>. Treat the plan as design rationale. Treat the handoff as an inventory that needs the corrections in this report.</p>
+
+<h2>Recommended order of work</h2>
+
+<ul class="tasks">
+  <li data-state="todo">Decide migration transaction mechanics. Add atomic failure coverage. Implement <code>db.py</code> and <code>jat init</code>.</li>
+  <li data-state="todo">Define nested transaction behavior. Prove outer rollback with a real Store write.</li>
+  <li data-state="todo">Settle role identity and repeated-posting behavior before changing the shipped schema.</li>
+  <li data-state="todo">Add the timeline status invariant and close connections after migration failure.</li>
+  <li data-state="todo">Implement companies and roles with tests and basic table output in the same usable slice.</li>
+  <li data-state="todo">Continue through applications, contacts, interviews, and import. Unskip each test module only when its behavior works.</li>
+</ul>
+
+<p class="footer">Sources: repository files under <span class="path">src/</span>, <span class="path">tests/</span>, and <span class="path">docs/</span>; <span class="path">_audit.md</span>; git history and status; unittest discovery; direct SQLite checks for nested transactions and failed scripts.</p>
+
+</main>
+</body>
+</html>
+
