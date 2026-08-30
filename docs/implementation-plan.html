@@ -281,7 +281,7 @@ dd { margin: 0; }
 <main>
 
 <h1>Job application tracker: implementation plan</h1>
-<p class="meta"><span>2026-08-29</span><span>job-app-track @ no commits yet</span><span>Plan</span></p>
+<p class="meta"><span>2026-08-29</span><span>job-app-track @ cfeb27d</span><span>Historical plan</span></p>
 
 <p>Build a stdlib-only Python package with a normalized SQLite schema, a versioned
 SQL migration runner, and a thin domain layer that a CLI drives now and a local
@@ -291,6 +291,15 @@ and format the result, and neither touches SQL. The schema is the one expensive
 decision here. It is now approved, so the scaffold and <code>0001_init.sql</code>
 land as the first commit and everything after is filling in function bodies
 against a fixed contract.</p>
+
+<div class="warn">
+  <span class="note-label">Historical document</span>
+  This plan records the initial design. The implementation is complete. Several
+  contracts changed during verification. Applications now select postings by
+  role ID. Store transactions compose through savepoints. Migration files
+  cannot control transactions. Use <span class="path">README.md</span>,
+  <code>jat --help</code>, and the current tests for executable instructions.
+</div>
 
 <nav class="toc">
   <ol>
