@@ -83,6 +83,17 @@ class PipelineRoute(unittest.TestCase):
         self.assertNotIn("<!doctype html>", result.body)
         self.assertIn('id="board"', result.body)
 
+    def test_board_card_offers_a_reject_button(self) -> None:
+        result = _dispatch(self.store, "GET", "/", htmx=True)
+        self.assertIn(">Reject</button>", result.body)
+        self.assertIn('"status": "rejected"', result.body)
+
+    def test_reject_button_gone_once_rejected(self) -> None:
+        [app] = self.store.applications()
+        self.store.record_status(app.id, "rejected")
+        result = _dispatch(self.store, "GET", "/", htmx=True)
+        self.assertNotIn(">Reject</button>", result.body)
+
 
 class StaticRoute(unittest.TestCase):
     def setUp(self) -> None:

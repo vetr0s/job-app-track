@@ -1,6 +1,6 @@
-{# htmx swap target: the whole board. The per-card status <select> posts to
-   /applications/<id>/status with view=board, and the handler re-renders this
-   fragment into #board with a morph swap. #}
+{# htmx swap target: the whole board. The per-card status <select> and the
+   Reject button both post to /applications/<id>/status with view=board, and
+   the handler re-renders this fragment into #board with a morph swap. #}
 {% import "_macros.html" as m %}
 <div id="board" class="board">
 {% if total == 0 %}
@@ -21,6 +21,12 @@
                 hx-target="#board" hx-swap="morph">
           {{ m.options(enums.STATUSES, app.status) }}
         </select>
+        {% if app.status != "rejected" %}
+        <button type="button" class="reject"
+                hx-post="/applications/{{ app.id }}/status"
+                hx-vals='{"status": "rejected", "view": "board"}'
+                hx-target="#board" hx-swap="morph">Reject</button>
+        {% endif %}
       </form>
     </article>
     {% endfor %}

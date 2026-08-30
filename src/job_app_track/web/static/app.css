@@ -62,8 +62,9 @@ h1 { font-size: 1.5rem; margin: 0 0 1rem; }
 .card a { color: var(--fg); text-decoration: none; }
 .card a:hover { text-decoration: underline; }
 .card .interest { display: block; font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
-.card .inline { margin-top: 0.3rem; }
-.card select { width: 100%; font-size: 0.8rem; }
+.card .inline { margin-top: 0.3rem; gap: 0.3rem; }
+.card select { flex: 1; font-size: 0.8rem; }
+.card .reject { font-size: 0.8rem; padding: 0.2rem 0.5rem; }
 
 .empty { color: var(--muted); }
 .error { color: #a11b1b; background: var(--surface); border: 1px solid #a11b1b; padding: 0.5rem 0.7rem; border-radius: 4px; }
