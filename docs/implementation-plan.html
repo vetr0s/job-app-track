@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job application tracker: implementation plan</title>
+<style>
+/* ============================================================
+   Standard HTML house style for plans, audits, and design docs.
+   Deliberately project-agnostic: this never adopts a project's theme.
+   Plain document on a plain background. Legibility over decoration.
+   ============================================================ */
+
+:root {
+  --bg:        #fbfbf9;
+  --fg:        #1a1a1a;
+  --fg-muted:  #5c5c5c;
+  --rule:      #d4d4cf;
+  --surface:   #f0f0ec;
+  --link:      #0b4fa8;
+  --visited:   #6b3fa0;
+  --accent:    #8a5a00;
+  --good:      #1c6b2e;
+  --bad:       #a11b1b;
+  --measure:   72em;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:       #101010;
+    --fg:       #e6e6e3;
+    --fg-muted: #9a9a95;
+    --rule:     #3a3a3a;
+    --surface:  #1c1c1c;
+    --link:     #89a6ff;
+    --visited:  #d98cff;
+    --accent:   #e0a33a;
+    --good:     #52c96a;
+    --bad:      #ff6b52;
+  }
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg);
+  margin: 0;
+  padding: 2.5rem 1.25rem 6rem;
+}
+
+/* Left-justified, not centered: the document hugs the left gutter and simply
+   stops at the measure. */
+main, .doc {
+  max-width: var(--measure);
+  margin: 0;
+}
+
+/* --- headings ------------------------------------------------ */
+
+h1, h2, h3, h4 {
+  line-height: 1.25;
+  font-weight: 600;
+  margin: 2.2em 0 0.6em;
+}
+h1 {
+  font-size: 1.9rem;
+  margin-top: 0;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--rule);
+}
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.1rem; }
+h4 { font-size: 1rem; color: var(--fg-muted); }
+
+/* Byline directly under the h1: date, repo, commit, author. */
+.meta {
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+  margin: -0.2em 0 2.5em;
+}
+.meta > * + *::before { content: " · "; }
+
+/* --- prose --------------------------------------------------- */
+
+p, ul, ol, dl, table, pre, blockquote { margin: 0 0 1.1em; }
+
+a          { color: var(--link); }
+a:visited  { color: var(--visited); }
+
+strong { font-weight: 600; }
+
+small, .muted { color: var(--fg-muted); font-size: 0.875rem; }
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 2.5em 0;
+}
+
+blockquote {
+  margin-left: 0;
+  padding: 0.1em 0 0.1em 1em;
+  border-left: 3px solid var(--rule);
+  color: var(--fg-muted);
+}
+
+ul, ol { padding-left: 1.4em; }
+li { margin: 0.25em 0; }
+li > ul, li > ol { margin: 0.25em 0; }
+
+/* --- code ---------------------------------------------------- */
+
+code, kbd, samp, .path {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.875em;
+}
+
+code {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0.1em 0.3em;
+}
+
+/* File paths and identifiers: mono, but no box. */
+.path { color: var(--fg-muted); }
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 0.75em 0.9em;
+  overflow-x: auto;
+  line-height: 1.45;
+}
+pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 0.8125rem;
+}
+
+/* --- tables -------------------------------------------------- */
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9375rem;
+}
+th, td {
+  border: 1px solid var(--rule);
+  padding: 0.45em 0.7em;
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  background: var(--surface);
+  font-weight: 600;
+}
+
+/* Wide tables scroll inside their own box; the page never scrolls sideways. */
+.scroll { overflow-x: auto; margin: 0 0 1.1em; }
+.scroll table { margin: 0; }
+
+/* --- callouts ------------------------------------------------ */
+
+.note, .warn, .ok {
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--fg-muted);
+  background: var(--surface);
+  padding: 0.7em 0.9em;
+  margin: 0 0 1.1em;
+}
+.note > :last-child, .warn > :last-child, .ok > :last-child { margin-bottom: 0; }
+.warn { border-left-color: var(--accent); }
+.ok   { border-left-color: var(--good); }
+
+.note-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  margin-bottom: 0.3em;
+}
+
+/* --- status tags --------------------------------------------- */
+
+.tag {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  padding: 0.05em 0.4em;
+  white-space: nowrap;
+  color: var(--fg-muted);
+}
+.tag-good { color: var(--good); }
+.tag-warn { color: var(--accent); }
+.tag-bad  { color: var(--bad); }
+
+/* --- task lists ---------------------------------------------- */
+
+/* <ul class="tasks"> with <li data-state="done|wip|todo"> */
+ul.tasks { list-style: none; padding-left: 0; }
+ul.tasks li {
+  padding-left: 1.9em;
+  position: relative;
+  margin: 0.4em 0;
+}
+ul.tasks li::before {
+  position: absolute;
+  left: 0;
+  font-family: ui-monospace, Menlo, monospace;
+  color: var(--fg-muted);
+  content: "[ ]";
+}
+ul.tasks li[data-state="done"]::before { content: "[x]"; color: var(--good); }
+ul.tasks li[data-state="wip"]::before  { content: "[~]"; color: var(--accent); }
+ul.tasks li[data-state="done"] { color: var(--fg-muted); }
+
+/* --- definition list (decisions, key/value facts) ------------- */
+
+dl { display: grid; grid-template-columns: minmax(8rem, max-content) 1fr; gap: 0.4em 1.2em; }
+dt { font-weight: 600; }
+dd { margin: 0; }
+
+/* --- table of contents --------------------------------------- */
+
+/* <nav class="toc"> wrapping a nested <ol> or <ul> of in-page links. */
+.toc {
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  padding: 0.9em 1.1em;
+  margin: 0 0 2.2em;
+}
+.toc ol, .toc ul { list-style: none; padding-left: 0; margin: 0; }
+.toc li { margin: 0.15em 0; }
+.toc ol ol, .toc ul ul { padding-left: 1.1em; }
+.toc ol ol li, .toc ul ul li { font-size: 0.9375rem; }
+.toc a { text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+
+/* A long flat contents list reads better in columns once there is room. */
+@media (min-width: 52rem) {
+  .toc > ol, .toc > ul { columns: 2; column-gap: 2.5em; }
+  .toc > ol > li, .toc > ul > li { break-inside: avoid; }
+}
+
+/* Back-to-contents link at the foot of a section. */
+.backtotoc { font-size: 0.8125rem; color: var(--fg-muted); }
+
+/* --- footnotes / source trail -------------------------------- */
+
+.footer {
+  margin-top: 4rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  color: var(--fg-muted);
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 34rem) {
+  body { font-size: 16px; padding: 1.5rem 1rem 4rem; }
+  dl { grid-template-columns: 1fr; gap: 0.15em; }
+  dd { margin-bottom: 0.6em; }
+}
+
+@media print {
+  :root { --bg: #fff; --fg: #000; }
+  body { font-size: 11pt; }
+  a { color: #000; }
+}
+</style>
+</head>
+<body>
+<main>
+
+<h1>Job application tracker: implementation plan</h1>
+<p class="meta"><span>2026-08-29</span><span>job-app-track @ no commits yet</span><span>Plan</span></p>
+
+<p>Build a stdlib-only Python package with a normalized SQLite schema, a versioned
+SQL migration runner, and a thin domain layer that a CLI drives now and a local
+web app drives later. The domain layer is a <code>Store</code> facade returning
+frozen dataclasses; both frontends parse input, call <code>Store</code> methods,
+and format the result, and neither touches SQL. The schema is the one expensive
+decision here. It is now approved, so the scaffold and <code>0001_init.sql</code>
+land as the first commit and everything after is filling in function bodies
+against a fixed contract.</p>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#decisions">Constraints and decisions</a></li>
+    <li><a href="#model">Data model</a></li>
+    <li><a href="#seam">The domain seam</a></li>
+    <li><a href="#files">File map</a></li>
+    <li><a href="#cli">CLI surface</a></li>
+    <li><a href="#seed">Seed data import</a></li>
+    <li><a href="#migrations">Migrations</a></li>
+    <li><a href="#deferred">Deferred scope</a></li>
+    <li><a href="#testing">Testing</a></li>
+    <li><a href="#order">Build order</a></li>
+    <li><a href="#decisions-confirmed">Decisions confirmed</a></li>
+  </ol>
+</nav>
+
+<h2 id="decisions">Constraints and decisions</h2>
+
+<dl>
+  <dt>Language</dt>
+  <dd>Python 3.13, managed with <code>uv</code>. Build backend hatchling (the <code>uv init</code> default).</dd>
+  <dt>Dependencies</dt>
+  <dd>Standard library only at runtime: <code>sqlite3</code>, <code>argparse</code>, <code>pathlib</code>, <code>importlib.resources</code>, <code>json</code>, <code>dataclasses</code>. No third-party packages.</dd>
+  <dt>Interface now</dt>
+  <dd>A CLI, installed as the <code>jat</code> console script and runnable as <code>python -m job_app_track</code>.</dd>
+  <dt>Interface later</dt>
+  <dd>A single-user local web app, reachable from a phone over a private VPN. Out of scope for this plan. The domain seam is designed so the web app is a second frontend over the same <code>Store</code>, not a rewrite.</dd>
+  <dt>Schema scope</dt>
+  <dd>Normalized: companies, roles, applications, contacts, interviews, plus an append-only status timeline and a contact-to-application join.</dd>
+  <dt>Schema changes</dt>
+  <dd>Numbered <code>.sql</code> files under <span class="path">migrations/</span>, applied on startup, tracked by <code>PRAGMA user_version</code>.</dd>
+  <dt>Database location</dt>
+  <dd><code>$JAT_DB</code> if set, else <code>~/.local/share/job-app-track/jat.db</code>, overridable per invocation with <code>--db</code>. Created on <code>jat init</code>.</dd>
+  <dt>Enums</dt>
+  <dd>Stored as <code>TEXT</code> with <code>CHECK</code> constraints. The canonical lists also live in <span class="path">core/enums.py</span> for input validation and, later, web form options. The migration copy is frozen at its version; the Python copy is current. This duplication is expected.</dd>
+</dl>
+
+<h2 id="model">Data model</h2>
+
+<p>Seven tables. A <strong>role</strong> is a specific posting at a company. An
+<strong>application</strong> is one pursuit of one role, and carries a
+denormalized <code>status</code> column for fast list and board queries. The
+authoritative history is <code>application_status_events</code>, which is
+append-only; <code>Store</code> writes an event and updates
+<code>applications.status</code> in the same transaction. Timestamps are
+ISO-8601 UTC text (<code>datetime('now')</code>), which sorts lexically and
+reads plainly in the <code>sqlite3</code> shell.</p>
+
+<div class="note">
+  <span class="note-label">Note</span>
+  Foreign keys are off by default in SQLite. The connection helper issues
+  <code>PRAGMA foreign_keys = ON</code> on every connect, so the
+  <code>ON DELETE</code> rules below actually fire.
+</div>
+
+<pre><code>-- migrations/0001_init.sql
+
+CREATE TABLE companies (
+  id          INTEGER PRIMARY KEY,
+  name        TEXT NOT NULL UNIQUE,
+  website     TEXT,
+  notes       TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE roles (
+  id           INTEGER PRIMARY KEY,
+  company_id   INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  title        TEXT NOT NULL,
+  location     TEXT,
+  arrangement  TEXT CHECK (arrangement IN ('onsite','hybrid','remote')),
+  comp_min     INTEGER,
+  comp_max     INTEGER,
+  url          TEXT,
+  jd_text      TEXT,
+  notes        TEXT,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE applications (
+  id             INTEGER PRIMARY KEY,
+  role_id        INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+  status         TEXT NOT NULL DEFAULT 'wishlist' CHECK (status IN (
+                   'wishlist','applied','screen','interview',
+                   'offer','rejected','accepted')),
+  source         TEXT CHECK (source IN (
+                   'board','referral','recruiter','cold','event','other')),
+  resume_version TEXT,
+  interest       TEXT CHECK (interest IN ('low','medium','high')),
+  applied_at     TEXT,
+  notes          TEXT,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE application_status_events (
+  id             INTEGER PRIMARY KEY,
+  application_id INTEGER NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+  status         TEXT NOT NULL,
+  occurred_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  note           TEXT
+);
+
+CREATE TABLE contacts (
+  id          INTEGER PRIMARY KEY,
+  company_id  INTEGER REFERENCES companies(id) ON DELETE SET NULL,
+  name        TEXT NOT NULL,
+  title       TEXT,
+  email       TEXT,
+  phone       TEXT,
+  linkedin    TEXT,
+  notes       TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE application_contacts (
+  application_id INTEGER NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+  contact_id     INTEGER NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+  relationship   TEXT NOT NULL CHECK (relationship IN (
+                   'recruiter','referrer','interviewer','hiring_manager','other')),
+  PRIMARY KEY (application_id, contact_id, relationship)
+);
+
+CREATE TABLE interviews (
+  id             INTEGER PRIMARY KEY,
+  application_id INTEGER NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+  kind           TEXT CHECK (kind IN (
+                   'phone_screen','technical','system_design',
+                   'behavioral','onsite','hiring_manager','hr','other')),
+  scheduled_at   TEXT,
+  duration_min   INTEGER,
+  location       TEXT,
+  contact_id     INTEGER REFERENCES contacts(id) ON DELETE SET NULL,
+  outcome        TEXT NOT NULL DEFAULT 'pending' CHECK (outcome IN (
+                   'pending','passed','failed','cancelled','no_decision')),
+  prep_notes     TEXT,
+  debrief_notes  TEXT,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX idx_roles_company        ON roles(company_id);
+CREATE INDEX idx_applications_role     ON applications(role_id);
+CREATE INDEX idx_applications_status   ON applications(status);
+CREATE INDEX idx_status_events_app     ON application_status_events(application_id);
+CREATE INDEX idx_app_contacts_contact  ON application_contacts(contact_id);
+CREATE INDEX idx_interviews_app        ON interviews(application_id);
+</code></pre>
+
+<h3>Domain types</h3>
+
+<p>One frozen dataclass per table, used as read models only. Write methods take
+keyword arguments and return the created or updated dataclass. <code>show</code>
+style reads return a small aggregate, for example
+<code>ApplicationDetail(application, role, company, timeline, contacts, interviews)</code>.</p>
+
+<pre><code># core/models.py  (shape, not final)
+
+@dataclass(frozen=True, slots=True)
+class Company:
+    id: int
+    name: str
+    website: str | None
+    notes: str | None
+    created_at: str
+
+@dataclass(frozen=True, slots=True)
+class Application:
+    id: int
+    role_id: int
+    status: str
+    source: str | None
+    resume_version: str | None
+    interest: str | None
+    applied_at: str | None
+    notes: str | None
+    created_at: str
+    updated_at: str
+
+# Role, Contact, Interview, StatusEvent follow the same pattern.
+
+@dataclass(frozen=True, slots=True)
+class ApplicationDetail:
+    application: Application
+    role: Role
+    company: Company
+    timeline: list[StatusEvent]
+    contacts: list[tuple[Contact, str]]   # (contact, relationship)
+    interviews: list[Interview]
+</code></pre>
+
+<h2 id="seam">The domain seam</h2>
+
+<p>The one architectural decision. Both the CLI now and the web app later call
+into the core. The question is what the core hands back and who owns the
+connection. Three shapes were considered.</p>
+
+<div class="scroll">
+<table>
+  <thead>
+    <tr>
+      <th>Dimension</th>
+      <th>A: <code>Store</code> facade + dataclasses</th>
+      <th>B: function modules, explicit <code>conn</code></th>
+      <th>C: rows out, SQL constants</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Caller writes</td>
+      <td><code>store.add_application(company=..., role_title=...)</code></td>
+      <td><code>applications.add(conn, company=..., role_title=...)</code></td>
+      <td><code>conn.execute(Q.ADD_APP, {...})</code> then map rows by hand</td>
+    </tr>
+    <tr>
+      <td>Domain types</td>
+      <td>Frozen dataclasses</td>
+      <td>Frozen dataclasses</td>
+      <td>None; <code>sqlite3.Row</code> or dicts</td>
+    </tr>
+    <tr>
+      <td>Connection and transactions</td>
+      <td><code>Store</code> owns them; <code>store.tx()</code> for multi-step atomics</td>
+      <td>Every caller owns them and repeats the setup</td>
+      <td>Every caller owns them</td>
+    </tr>
+    <tr>
+      <td>Status-event bookkeeping</td>
+      <td>Inside <code>Store</code>, one place</td>
+      <td>Inside a function, one place</td>
+      <td>Nowhere to live; leaks into both frontends</td>
+    </tr>
+    <tr>
+      <td>Test surface</td>
+      <td>Call methods on an in-memory <code>Store</code></td>
+      <td>Call a function with an in-memory <code>conn</code></td>
+      <td>Assert on SQL strings and column order</td>
+    </tr>
+    <tr>
+      <td>Web app later</td>
+      <td>Construct a <code>Store</code> per request, same methods</td>
+      <td>Rebuild the connection and transaction dance a second time</td>
+      <td>Re-learn every column name a second time</td>
+    </tr>
+    <tr>
+      <td>Failure mode</td>
+      <td>Class accretes methods and becomes a god object</td>
+      <td>Two frontends grow two subtly different setup paths</td>
+      <td>No contract at the seam; tests pin implementation</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>Recommendation: A, with two grafts from B.</strong> Start from the
+<code>Store</code> facade. Deletion test: remove <code>Store</code> and the SQL,
+the row mapping, the status-event transaction, and the migrate-on-open all
+spread into both frontends, so it earns its place. Guard the god-object failure
+mode by taking two things from B. First, keep each concern's SQL in its own
+private module (<span class="path">_applications.py</span>,
+<span class="path">_contacts.py</span>) that <code>Store</code> composes, so the
+class is a facade over small testable units. Second, expose
+<code>store.tx()</code> as a context manager for the rare caller that needs
+several writes to commit or roll back together.</p>
+
+<pre><code># The caller's usage, written first. Everything else derives from this.
+
+from job_app_track.core import Store
+
+store = Store.open()                       # resolve path, connect, migrate to head
+
+acme = store.add_company("Acme Corp", website="acme.example")
+role = store.add_role(company="Acme Corp", title="Senior Backend Engineer",
+                      arrangement="hybrid", url="https://...")
+app  = store.apply(company="Acme Corp", role="Senior Backend Engineer",
+                   source="referral", resume_version="v3")   # status -> 'applied' + event
+
+store.record_status(app.id, "screen", note="30 min with recruiter")
+store.set_interest(app.id, "high")
+store.link_contact(app.id, contact_id=4, relationship="referrer")
+store.add_interview(app.id, kind="technical", scheduled_at="2026-09-03 14:00",
+                    contact_id=7)
+
+open_apps = store.applications(status="interview")     # -> list[Application]
+detail    = store.application_detail(app.id)           # -> ApplicationDetail
+board     = store.pipeline()                           # -> dict[str, list[Application]]
+
+with store.tx():                                       # one atomic unit
+    store.record_status(app.id, "offer", note="verbal")
+    store.set_interest(app.id, "high")
+</code></pre>
+
+<h3>Store method surface</h3>
+
+<pre><code># core/store.py  (signatures; bodies are "not implemented")
+
+class Store:
+    @classmethod
+    def open(cls, db_path: str | Path | None = None) -> "Store": ...
+    def close(self) -> None: ...
+    def __enter__(self) -> "Store": ...
+    def __exit__(self, *exc) -> None: ...
+    def tx(self) -> AbstractContextManager[None]: ...
+
+    # companies and roles
+    def add_company(self, name: str, *, website: str | None = None,
+                    notes: str | None = None) -> Company: ...
+    def companies(self) -> list[Company]: ...
+    def add_role(self, *, company: str, title: str, location: str | None = None,
+                 arrangement: str | None = None, comp_min: int | None = None,
+                 comp_max: int | None = None, url: str | None = None,
+                 jd_text: str | None = None, notes: str | None = None) -> Role: ...
+    def roles(self, *, company: str | None = None) -> list[Role]: ...
+
+    # applications
+    def apply(self, *, company: str, role: str, source: str | None = None,
+              resume_version: str | None = None, interest: str | None = None,
+              note: str | None = None) -> Application: ...
+    def applications(self, *, status: str | None = None,
+                     company: str | None = None) -> list[Application]: ...
+    def application_detail(self, app_id: int) -> ApplicationDetail: ...
+    def record_status(self, app_id: int, status: str, *,
+                      note: str | None = None, occurred_at: str | None = None) -> Application: ...
+    def set_interest(self, app_id: int, interest: str | None) -> Application: ...
+    def add_note(self, app_id: int, text: str) -> Application: ...
+    def pipeline(self) -> dict[str, list[Application]]: ...
+
+    # contacts
+    def add_contact(self, name: str, *, company: str | None = None,
+                    title: str | None = None, email: str | None = None,
+                    phone: str | None = None, linkedin: str | None = None,
+                    notes: str | None = None) -> Contact: ...
+    def contacts(self, *, company: str | None = None) -> list[Contact]: ...
+    def link_contact(self, app_id: int, *, contact_id: int, relationship: str) -> None: ...
+
+    # interviews
+    def add_interview(self, app_id: int, *, kind: str, scheduled_at: str | None = None,
+                      duration_min: int | None = None, location: str | None = None,
+                      contact_id: int | None = None, prep_notes: str | None = None) -> Interview: ...
+    def set_interview_outcome(self, interview_id: int, outcome: str, *,
+                              debrief_notes: str | None = None) -> Interview: ...
+    def interviews(self, *, app_id: int | None = None, upcoming: bool = False) -> list[Interview]: ...
+</code></pre>
+
+<h2 id="files">File map</h2>
+
+<pre><code>pyproject.toml               # no runtime deps; [project.scripts] jat = "job_app_track.cli:main"
+                             # hatchling: include migrations as package data
+docs/
+  implementation-plan.html   # this document
+start-data/
+  job_app_tracker.csv        # the old spreadsheet, seed data for jat import
+src/job_app_track/
+  __init__.py
+  __main__.py                # python -m job_app_track  ->  cli.main()
+  cli.py                     # argparse subcommands: parse args, call Store, format output
+  format.py                  # plain-text tables (str.ljust) and --json rendering
+  importer.py                # CSV row -> Store calls; column mapping and lenient date parsing
+  core/
+    __init__.py              # re-exports Store and the model types
+    store.py                 # Store facade: open(), tx(), delegates to _concern modules
+    db.py                    # connect(), path resolution, PRAGMAs, migration runner
+    enums.py                 # STATUSES, SOURCES, INTERESTS, INTERVIEW_KINDS, ... canonical lists
+    models.py                # frozen dataclasses + ApplicationDetail aggregate
+    _companies.py            # SQL + row mapping for companies and roles
+    _applications.py         # SQL + row mapping for applications and status events
+    _contacts.py             # SQL + row mapping for contacts and the join table
+    _interviews.py           # SQL + row mapping for interviews
+  migrations/
+    0001_init.sql
+tests/
+  helpers.py                 # fresh_store() -> Store on a tmp or :memory: db, migrated
+  test_migrations.py         # empty db reaches head; re-running migrate is a no-op
+  test_applications.py       # apply, status transitions, denorm stays correct, pipeline
+  test_contacts.py           # add, company link, m2m relationship rows
+  test_interviews.py         # add, outcome update, upcoming filter
+  test_importer.py           # status and date mapping, blank rows, refuse-when-populated
+</code></pre>
+
+<p>Migrations ship inside the package and are read with
+<code>importlib.resources.files("job_app_track.migrations")</code>, so an
+installed <code>jat</code> can still find them.</p>
+
+<h2 id="cli">CLI surface</h2>
+
+<p>The CLI only parses arguments, calls one <code>Store</code> method, and
+formats the return value. Read commands take <code>--json</code>, which is both a
+scripting aid and a preview of the payload shape the future web app will serve.</p>
+
+<pre><code>jat init                              # create db, migrate to head, print the path
+jat db-path                           # print the resolved db path and schema version
+jat import start-data/job_app_tracker.csv   # bulk-load the old spreadsheet; refuses if apps exist, --force overrides
+
+jat company add "Acme Corp" --website acme.example
+jat company list
+
+jat role add --company "Acme Corp" --title "Senior Backend Engineer" \
+             --arrangement hybrid --url https://...
+jat role list [--company "Acme Corp"]
+
+jat apply --company "Acme Corp" --role "Senior Backend Engineer" \
+          --source referral --resume v3            # creates app, status applied, one event
+jat app list [--status interview] [--company "Acme Corp"] [--json]
+jat app show &lt;id&gt; [--json]                          # app + role + company + timeline + contacts + interviews
+jat app status &lt;id&gt; screen --note "recruiter call"
+jat app interest &lt;id&gt; high
+jat app note &lt;id&gt; "left a voicemail for the referrer"
+
+jat contact add --name "Jane Doe" --company "Acme Corp" --email jane@acme.example
+jat contact list [--company "Acme Corp"] [--json]
+jat contact link &lt;app-id&gt; &lt;contact-id&gt; --as interviewer
+
+jat interview add &lt;app-id&gt; --kind technical --at "2026-09-03 14:00" --with &lt;contact-id&gt;
+jat interview outcome &lt;interview-id&gt; passed --debrief "strong on system design"
+jat interview list [--app &lt;id&gt;] [--upcoming] [--json]
+
+jat pipeline [--json]                 # counts per status, then apps grouped by status
+</code></pre>
+
+<h2 id="seed">Seed data import</h2>
+
+<p><span class="path">start-data/job_app_tracker.csv</span> is the spreadsheet
+the user tracked applications in over the past two months. It is both a shape
+reference for the schema and the initial data set. <code>jat import</code> reads
+it with the stdlib <code>csv</code> module and, per row, upserts a company by
+exact name, inserts a role, inserts an application, and writes one status event.
+It creates no contacts and no interviews, because the CSV holds neither. The
+import refuses to run if the database already has applications, unless
+<code>--force</code> is passed.</p>
+
+<div class="scroll">
+<table>
+  <thead>
+    <tr><th>CSV column</th><th>Lands in</th><th>Rule</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Company</td><td><code>companies.name</code></td><td>Upsert by exact string. Variants like "Spacex", "Spacex (Starlink)", and "Starlink" become separate rows.</td></tr>
+    <tr><td>Position</td><td><code>roles.title</code></td><td>Trimmed. A blank cell becomes <code>"(unspecified)"</code> so the NOT NULL holds.</td></tr>
+    <tr><td>Location</td><td><code>roles.location</code>, <code>roles.arrangement</code></td><td>Raw string to <code>location</code>. If it contains "remote" or "hybrid" set <code>arrangement</code> to match, else leave null.</td></tr>
+    <tr><td>Job Link</td><td><code>roles.url</code></td><td>Raw string, even when it is prose or two URLs jammed together.</td></tr>
+    <tr><td>Date Applied</td><td><code>applications.applied_at</code>, status event <code>occurred_at</code></td><td>Parse <code>M/D</code>, <code>M/D/YY</code>, <code>MM/DD</code>. Assume year 2026 when absent. Null if the cell is blank.</td></tr>
+    <tr><td>Status</td><td><code>applications.status</code> + one status event</td><td>Mapped, see below. Blank maps to <code>wishlist</code>.</td></tr>
+    <tr><td>Interest Level</td><td><code>applications.interest</code></td><td><code>High/Medium/Low</code> to <code>high/medium/low</code>. Blank stays null.</td></tr>
+    <tr><td>Notes</td><td><code>applications.notes</code></td><td>Verbatim.</td></tr>
+    <tr><td>Applied?</td><td>nothing</td><td>Redundant with <code>applied_at</code> being set. Ignored.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Status mapping, CSV value on the left:</p>
+
+<pre><code>""                          -> wishlist
+"Applied"                   -> applied
+"Technical Exam Screening"  -> screen
+"Interview Scheduled"       -> interview
+"Interview Completed"       -> interview
+# "Rejected" / "Offer" / "Accepted" map straight through once they appear
+</code></pre>
+
+<div class="note">
+  <span class="note-label">Note</span>
+  The import is lossy on purpose. "Interview Scheduled" and "Interview Completed"
+  both collapse to <code>interview</code>, and company name variants are not
+  merged. Treat the imported rows as a starting point to clean up in the app, not
+  a faithful copy.
+</div>
+
+<h2 id="migrations">Migrations</h2>
+
+<p>The runner reads <code>PRAGMA user_version</code>, applies every file whose
+numeric prefix is higher, each in its own transaction, and bumps
+<code>user_version</code> to the file's number. About fifteen lines.</p>
+
+<pre><code># core/db.py  (shape)
+
+def migrate(conn: sqlite3.Connection) -> None:
+    have = conn.execute("PRAGMA user_version").fetchone()[0]
+    for path in _sorted_migration_files():
+        version = int(path.name.split("_", 1)[0])
+        if version &lt;= have:
+            continue
+        with conn:                                  # BEGIN / COMMIT, rollback on error
+            conn.executescript(path.read_text("utf-8"))
+            conn.execute(f"PRAGMA user_version = {version}")
+</code></pre>
+
+<div class="note">
+  <span class="note-label">Note</span>
+  <code>PRAGMA user_version = ?</code> cannot be parameterized. The value is an
+  <code>int()</code> parsed from a filename that the runner controls, so the
+  f-string is safe here and only here.
+</div>
+
+<p>Rules for migration files: forward-only, never edit one after it has shipped,
+one concern per file, and every file leaves the schema runnable. Adding
+full-text search or a new column later is a new numbered file, not an edit to
+<code>0001_init.sql</code>.</p>
+
+<h2 id="deferred">Deferred scope</h2>
+
+<ul>
+  <li><strong>The web app.</strong> The <code>Store</code> API and the
+  <code>--json</code> payloads are designed to carry it, but no server code is in
+  this plan. Revisit the stdlib-only rule at that point: <code>http.server</code>
+  plus <code>string.Template</code> works, but a small framework would be a
+  fraction of the code. That is a decision for when the CLI is proven, not now.</li>
+  <li><strong>Auth and multi-user.</strong> Single user, single file, filesystem
+  permissions. The VPN is the access control.</li>
+  <li><strong>Full-text search</strong> over <code>jd_text</code> and notes.
+  SQLite FTS5 is compiled into the stdlib <code>sqlite3</code> on most builds;
+  add it as a later migration when the data volume justifies it.</li>
+  <li><strong>Reminders and calendar export</strong> for interviews.</li>
+  <li><strong>Attachments.</strong> When resume and offer PDFs matter, store file
+  paths, not blobs.</li>
+  <li><strong>Export</strong> beyond the per-command <code>--json</code> read
+  flag, and repeat CSV imports beyond the one-shot <code>jat import</code>.</li>
+  <li><strong>Company deduplication.</strong> The importer keys on exact name, so
+  near-duplicate company rows are expected. A merge command is later work.</li>
+</ul>
+
+<h2 id="testing">Testing</h2>
+
+<p>Stdlib <code>unittest</code>. A helper builds a <code>Store</code> on a
+<code>:memory:</code> or <code>tmp_path</code> database, already migrated to
+head, so every test starts from an empty known schema. No mocking; in-memory
+SQLite is fast enough to use the real thing. The <code>Store</code> interface is
+the only seam the tests cross, which is the same seam the CLI and the web app
+cross.</p>
+
+<p>Coverage that matters for the prototype:</p>
+<ul>
+  <li>Migrating an empty database reaches head, and running <code>migrate</code> again changes nothing.</li>
+  <li><code>record_status</code> appends an event and leaves <code>applications.status</code> equal to the latest event, in the same transaction.</li>
+  <li><code>pipeline()</code> groups every application under exactly one status and omits no status bucket that has rows.</li>
+  <li><code>link_contact</code> enforces the <code>(application, contact, relationship)</code> primary key and rejects an unknown relationship.</li>
+  <li><code>set_interview_outcome</code> updates outcome and debrief without touching other columns.</li>
+  <li>A failing statement inside <code>store.tx()</code> rolls the whole block back.</li>
+  <li>The importer maps a blank status to <code>wishlist</code>, parses a
+  year-less date to 2026, substitutes a blank position, and refuses to run
+  against a database that already has applications.</li>
+</ul>
+
+<h2 id="order">Build order</h2>
+
+<p>Each step is shippable and leaves the tree green. Step 1 is the approved
+scaffold commit.</p>
+
+<ul class="tasks">
+  <li data-state="wip"><strong>Scaffold.</strong> <code>src/</code> layout, <code>pyproject.toml</code> with the console script and package-data config, <code>core/</code> modules with signatures and <code>NotImplementedError</code> bodies, and the complete <code>0001_init.sql</code>. Lands as the first commit.</li>
+  <li data-state="todo"><strong>Migrations and <code>db.py</code>.</strong> Path resolution, <code>connect()</code> with PRAGMAs, the migration runner. Wire <code>jat init</code> and <code>jat db-path</code>. Test: migration idempotency.</li>
+  <li data-state="todo"><strong>Models and enums.</strong> The dataclasses, the canonical enum lists, row-mapping helpers.</li>
+  <li data-state="todo"><strong>Companies and roles.</strong> <code>_companies.py</code>, the matching <code>Store</code> methods, <code>jat company</code> and <code>jat role</code> commands.</li>
+  <li data-state="todo"><strong>Applications and timeline.</strong> <code>_applications.py</code>, <code>apply</code>, <code>applications</code>, <code>application_detail</code>, <code>record_status</code>, <code>set_interest</code>, <code>pipeline</code>, plus <code>store.tx()</code>. Commands: <code>jat apply</code>, <code>jat app *</code>, <code>jat pipeline</code>. Tests for the denorm and grouping.</li>
+  <li data-state="todo"><strong>Contacts.</strong> <code>_contacts.py</code>, the join table methods, <code>jat contact *</code>.</li>
+  <li data-state="todo"><strong>Interviews.</strong> <code>_interviews.py</code>, <code>jat interview *</code>, upcoming filter.</li>
+  <li data-state="todo"><strong>Importer.</strong> <code>importer.py</code> and <code>jat import</code>, then load <span class="path">start-data/job_app_tracker.csv</span> into the dev database. Tests for the mapping rules.</li>
+  <li data-state="todo"><strong>Output polish.</strong> <code>format.py</code> plain-text tables and <code>--json</code> across all read commands.</li>
+</ul>
+
+<h2 id="decisions-confirmed">Decisions confirmed</h2>
+
+<dl>
+  <dt>Schema</dt>
+  <dd>Seven-table shape approved. <code>withdrawn</code> dropped from the status
+  set. <code>priority</code> replaced by <code>interest</code>
+  (<code>low/medium/high</code>) to match the spreadsheet's Interest Level column.</dd>
+  <dt>Names and layout</dt>
+  <dd>Package <code>job_app_track</code>, command <code>jat</code>,
+  <code>src/</code> layout. Approved.</dd>
+  <dt>Test framework</dt>
+  <dd>Stdlib <code>unittest</code>. No <code>pytest</code>.</dd>
+  <dt>Database path</dt>
+  <dd><code>~/.local/share/job-app-track/jat.db</code>, <code>$JAT_DB</code> and
+  <code>--db</code> overrides.</dd>
+  <dt>Seed data</dt>
+  <dd><span class="path">start-data/job_app_tracker.csv</span> is a rough
+  reference and the initial import source, not a spec.</dd>
+  <dt>First commit</dt>
+  <dd>Approved. Scaffold plus <code>0001_init.sql</code> land as one commit.</dd>
+</dl>
+
+<p class="footer">Sources: repo state at <span class="path">main</span> (uv scaffold only, no commits), <span class="path">README.md</span>, <span class="path">start-data/job_app_tracker.csv</span> (62 rows), and five scoping answers from the user.</p>
+
+</main>
+</body>
+</html>
