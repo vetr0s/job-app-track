@@ -89,6 +89,80 @@ class Dispatch(unittest.TestCase):
         board = json.loads(self.run_cli("pipeline", "--json"))
         self.assertEqual(board["applied"][0]["id"], 1)
 
+    def test_company_add_and_list(self) -> None:
+        self.run_cli("init")
+        self.assertEqual(
+            self.run_cli("company", "add", "Acme", "--website", "https://acme.example"),
+            "Company 1: Acme",
+        )
+        listing = self.run_cli("company", "list")
+        self.assertIn("Acme", listing)
+        self.assertIn("https://acme.example", listing)
+
+    def test_role_list_plain_and_filtered(self) -> None:
+        self.run_cli("role", "add", "--company", "Acme", "--title", "Backend")
+        self.run_cli("role", "add", "--company", "Globex", "--title", "Frontend")
+        everything = self.run_cli("role", "list")
+        self.assertIn("Backend", everything)
+        self.assertIn("Frontend", everything)
+        just_acme = self.run_cli("role", "list", "--company", "Acme")
+        self.assertIn("Backend", just_acme)
+        self.assertNotIn("Frontend", just_acme)
+
+    def test_app_status_interest_and_note_flow(self) -> None:
+        self.run_cli("role", "add", "--company", "Acme", "--title", "Engineer")
+        self.run_cli("apply", "--role-id", "1")
+        self.assertEqual(
+            self.run_cli("app", "status", "1", "screen", "--note", "recruiter call"),
+            "Application 1: screen",
+        )
+        self.assertEqual(self.run_cli("app", "interest", "1", "high"), "Application 1: interest high")
+        self.assertEqual(self.run_cli("app", "note", "1", "salary confirmed"), "Application 1: note added")
+        detail = self.run_cli("app", "show", "1")
+        self.assertIn("screen", detail)
+        self.assertIn("recruiter call", detail)
+        self.assertIn("salary confirmed", detail)
+
+    def test_app_list_status_filter(self) -> None:
+        self.run_cli("role", "add", "--company", "Acme", "--title", "Engineer")
+        self.run_cli("role", "add", "--company", "Acme", "--title", "Manager")
+        self.run_cli("apply", "--role-id", "1")
+        self.run_cli("apply", "--role-id", "2")
+        self.run_cli("app", "status", "2", "offer")
+        applied = json.loads(self.run_cli("app", "list", "--status", "applied", "--json"))
+        self.assertEqual([row["id"] for row in applied], [1])
+
+    def test_interview_outcome_and_upcoming_list(self) -> None:
+        self.run_cli("role", "add", "--company", "Acme", "--title", "Engineer")
+        self.run_cli("apply", "--role-id", "1")
+        self.run_cli("interview", "add", "1", "--kind", "technical", "--at", "2099-01-01T10:00")
+        self.assertEqual(
+            self.run_cli("interview", "outcome", "1", "passed", "--debrief", "strong"),
+            "Interview 1: passed",
+        )
+        upcoming = json.loads(self.run_cli("interview", "list", "--upcoming", "--json"))
+        self.assertEqual(upcoming, [])
+        all_rows = json.loads(self.run_cli("interview", "list", "--app", "1", "--json"))
+        self.assertEqual(all_rows[0]["outcome"], "passed")
+
+    def test_pipeline_plain_text_groups_by_status(self) -> None:
+        self.run_cli("role", "add", "--company", "Acme", "--title", "Engineer")
+        self.run_cli("apply", "--role-id", "1")
+        board = self.run_cli("pipeline")
+        self.assertIn("applied (1)", board)
+
+    def test_import_dispatch_reports_count(self) -> None:
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        csv_path = Path(directory.name) / "seed.csv"
+        csv_path.write_text(
+            "Position,Company,Location,Job Link,Applied?,Date Applied,Status,Interest Level,Notes\n"
+            "Engineer,Acme,Remote,,Yes,07/03,Applied,High,\n"
+            "Manager,Globex,Onsite,,Yes,07/04,Interview Scheduled,Medium,\n",
+            encoding="utf-8",
+        )
+        self.assertEqual(self.run_cli("import", str(csv_path)), "Imported 2 applications.")
+
 
 class Errors(unittest.TestCase):
     def setUp(self) -> None:
