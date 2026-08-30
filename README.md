@@ -1,7 +1,8 @@
 # Job application tracker
 
-A local CLI for tracking software engineering job applications in SQLite.
-Runtime code uses only the Python standard library.
+A local tracker for software engineering job applications, backed by SQLite.
+A `jat` CLI and a `jat serve` web frontend are two frontends over the same
+store. Jinja2 is the only runtime dependency; it is used by the web frontend.
 
 ## Setup
 
@@ -49,6 +50,23 @@ run when applications already exist unless `--force` is present.
 ```sh
 uv run jat import start-data/job_app_tracker.csv
 ```
+
+## Web frontend
+
+`jat serve` runs a local web frontend over the same database. Every CLI action
+has a page or a form.
+
+```sh
+uv run jat serve                       # http://127.0.0.1:8765
+uv run jat serve --host 0.0.0.0 --port 9000
+uv run jat --db /tmp/demo.db serve     # same --db / $JAT_DB resolution
+```
+
+The pipeline board is the landing page. Each card has an inline status dropdown
+and a one-click Reject button. The list views carry filter forms and add
+panels. `/import` takes a server-side path to a `job_app_tracker.csv`. The
+server is single-connection and serves GET and POST only; run it on a trusted
+network. Ctrl-C stops it.
 
 ## Tests
 

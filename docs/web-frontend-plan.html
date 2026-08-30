@@ -254,6 +254,17 @@ dd { margin: 0; }
 <h1>Web frontend plan</h1>
 <p class="meta"><span>2026-08-29</span><span>job-app-track @ 989e8e9</span><span>Design and handoff</span></p>
 
+<div class="warn">
+  <span class="note-label">Superseded</span>
+  This is the design write-up from the skeleton stage. Every route in the table
+  below is now implemented and tested; the <span class="tag tag-warn">stub</span>
+  markers no longer hold. <code>import_run</code> reads a server-side path rather
+  than a multipart upload, and nav counts via <code>&lt;hx-partial&gt;</code>
+  were dropped. Current state is <span class="path">_audit.md</span>,
+  <span class="path">README.md</span>, and <span class="path">tests/test_web.py</span>.
+  Read this document for the rationale, not the status.
+</div>
+
 <p>The web frontend is a second frontend over the same <code>Store</code> the CLI
 uses. This session landed a running skeleton: a stdlib <code>http.server</code>
 bound to a route table, Jinja2 templates packaged with the wheel, a
