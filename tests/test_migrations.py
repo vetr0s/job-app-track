@@ -39,6 +39,19 @@ class MigrationRunner(unittest.TestCase):
         self.assertIsNone(leaked)
         self.assertEqual(db.schema_version(conn), 0)
 
+    def test_migration_cannot_commit_partial_schema(self) -> None:
+        conn = db.connect(":memory:")
+        sql = "CREATE TABLE leaked (id INTEGER); COMMIT; INSERT INTO missing VALUES (1);"
+        with mock.patch.object(db, "_migration_sql", return_value=[(1, sql)]):
+            with self.assertRaises(ValueError):
+                db.migrate(conn)
+
+        leaked = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'leaked'"
+        ).fetchone()
+        self.assertIsNone(leaked)
+        self.assertEqual(db.schema_version(conn), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

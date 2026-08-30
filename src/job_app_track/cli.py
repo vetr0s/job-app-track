@@ -172,12 +172,24 @@ def _database_path(raw: str | None) -> Path:
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     path = _database_path(args.db)
+    if args.command == "init":
+        with Store.open(path):
+            pass
+        print(path)
+        return 0
+    if args.command == "db-path":
+        if not path.exists():
+            print(f"{path} (schema 0, not created)")
+            return 0
+        conn = db.connect(path)
+        try:
+            version = db.schema_version(conn)
+        finally:
+            conn.close()
+        print(f"{path} (schema {version})")
+        return 0
     with Store.open(path) as store:
-        if args.command == "init":
-            print(path)
-        elif args.command == "db-path":
-            print(f"{path} (schema {store.schema_version()})")
-        elif args.command == "import":
+        if args.command == "import":
             count = importer.import_csv(store, args.csv_path, force=args.force)
             print(f"Imported {count} applications.")
         elif args.command == "company":

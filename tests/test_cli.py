@@ -37,6 +37,11 @@ class Dispatch(unittest.TestCase):
         return output.getvalue().strip()
 
     def test_init_and_db_path(self) -> None:
+        self.assertEqual(
+            self.run_cli("db-path"),
+            f"{self.db_path} (schema 0, not created)",
+        )
+        self.assertFalse(Path(self.db_path).exists())
         self.assertEqual(self.run_cli("init"), self.db_path)
         head = max(version for version, _ in db._migration_sql())
         self.assertEqual(self.run_cli("db-path"), f"{self.db_path} (schema {head})")

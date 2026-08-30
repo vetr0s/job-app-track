@@ -67,6 +67,27 @@ class ImportCsv(unittest.TestCase):
         with self.assertRaises(ValueError):
             importer.import_csv(self.store, self._write(rows))
 
+    def test_database_failure_rolls_back_the_whole_file(self) -> None:
+        rows = self._header()
+        rows += "Dev,Acme,Remote,,,,Applied,,\n"
+        rows += "Dev,Beta,Remote,,,,Applied,,\n"
+        original_apply = self.store.apply
+        calls = 0
+
+        def fail_second(**fields: object):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise RuntimeError("database failure")
+            return original_apply(**fields)
+
+        self.store.apply = fail_second
+        with self.assertRaises(RuntimeError):
+            importer.import_csv(self.store, self._write(rows))
+        self.assertEqual(self.store.companies(), [])
+        self.assertEqual(self.store.roles(), [])
+        self.assertEqual(self.store.applications(), [])
+
     def test_refuses_when_applications_exist(self) -> None:
         role = self.store.add_role(company="Acme", title="A")
         self.store.apply(role_id=role.id)

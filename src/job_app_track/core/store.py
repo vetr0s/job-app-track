@@ -44,9 +44,6 @@ class Store:
     def close(self) -> None:
         self._conn.close()
 
-    def schema_version(self) -> int:
-        return db.schema_version(self._conn)
-
     def __enter__(self) -> Store:
         return self
 

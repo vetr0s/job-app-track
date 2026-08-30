@@ -113,9 +113,15 @@ def record_status(
             "(application_id, status, occurred_at, note) VALUES (?, ?, ?, ?)",
             (app_id, status, occurred_at, note),
         )
+    latest = conn.execute(
+        "SELECT status FROM application_status_events "
+        "WHERE application_id = ? ORDER BY occurred_at DESC, id DESC LIMIT 1",
+        (app_id,),
+    ).fetchone()
+    assert latest is not None
     conn.execute(
         "UPDATE applications SET status = ?, updated_at = datetime('now') WHERE id = ?",
-        (status, app_id),
+        (latest["status"], app_id),
     )
     app = get(conn, app_id)
     assert app is not None

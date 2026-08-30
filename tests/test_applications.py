@@ -50,6 +50,15 @@ class Applications(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.store.add_role(company="Acme", title="Engineer", typo="value")
 
+    def test_backdated_event_does_not_replace_latest_status(self) -> None:
+        role = self.store.add_role(company="Acme", title="Engineer")
+        app = self.store.apply(role_id=role.id, occurred_at="2026-08-20 10:00:00")
+        self.store.record_status(app.id, "interview", occurred_at="2026-08-25 10:00:00")
+        updated = self.store.record_status(app.id, "screen", occurred_at="2026-08-21 10:00:00")
+        detail = self.store.application_detail(app.id)
+        self.assertEqual(updated.status, "interview")
+        self.assertEqual(detail.application.status, detail.timeline[-1].status)
+
 
 if __name__ == "__main__":
     unittest.main()

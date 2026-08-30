@@ -48,14 +48,16 @@ def migrate(conn: sqlite3.Connection) -> None:
     for version, sql in _migration_sql():
         if version <= have:
             continue
-        script = (
-            "BEGIN IMMEDIATE;\n"
-            f"{sql}\n"
-            f"PRAGMA user_version = {version};\n"
-            "COMMIT;"
-        )
+        statements = _statements(sql)
+        forbidden = {"begin", "commit", "end", "rollback", "savepoint", "release"}
+        if any(_leading_keyword(statement) in forbidden for statement in statements):
+            raise ValueError("migration files cannot control transactions")
         try:
-            conn.executescript(script)
+            conn.execute("BEGIN IMMEDIATE")
+            for statement in statements:
+                conn.execute(statement)
+            conn.execute(f"PRAGMA user_version = {version}")
+            conn.commit()
         except BaseException:
             if conn.in_transaction:
                 conn.rollback()
@@ -65,6 +67,27 @@ def migrate(conn: sqlite3.Connection) -> None:
 
 def schema_version(conn: sqlite3.Connection) -> int:
     return int(conn.execute("PRAGMA user_version").fetchone()[0])
+
+
+def _statements(sql: str) -> list[str]:
+    statements: list[str] = []
+    start = 0
+    for index, char in enumerate(sql):
+        if char != ";":
+            continue
+        candidate = sql[start:index + 1]
+        if sqlite3.complete_statement(candidate):
+            statements.append(candidate)
+            start = index + 1
+    remainder = sql[start:].strip()
+    if remainder:
+        raise ValueError("migration ends with an incomplete SQL statement")
+    return statements
+
+
+def _leading_keyword(statement: str) -> str:
+    prefix = re.match(r"(?:\s|--[^\n]*(?:\n|$)|/\*.*?\*/)*([A-Za-z]+)", statement, re.DOTALL)
+    return prefix.group(1).casefold() if prefix is not None else ""
 
 
 def _migration_sql() -> list[tuple[int, str]]:
