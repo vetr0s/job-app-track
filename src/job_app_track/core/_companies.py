@@ -33,6 +33,13 @@ def _role(row: sqlite3.Row) -> Role:
     return Role(**dict(row))
 
 
+# Every Role carries its company name, so each read joins companies.
+_ROLE_SELECT = (
+    "SELECT roles.*, companies.name AS company "
+    "FROM roles JOIN companies ON companies.id = roles.company_id"
+)
+
+
 def upsert_company(conn: sqlite3.Connection, name: str, **fields: object) -> Company:
     """Insert by name, or return the existing row. Used by add and by import."""
     _known(fields, _COMPANY_FIELDS, "company")
@@ -74,20 +81,19 @@ def add_role(conn: sqlite3.Connection, company_id: int, **fields: object) -> Rol
 
 
 def list_roles(conn: sqlite3.Connection, company_id: int | None = None) -> list[Role]:
-    if company_id is None:
-        rows = conn.execute("SELECT * FROM roles ORDER BY created_at, id").fetchall()
-    else:
-        rows = conn.execute(
-            "SELECT * FROM roles WHERE company_id = ? ORDER BY created_at, id",
-            (company_id,),
-        ).fetchall()
-    return [_role(row) for row in rows]
+    sql = _ROLE_SELECT
+    params: tuple[object, ...] = ()
+    if company_id is not None:
+        sql += " WHERE roles.company_id = ?"
+        params = (company_id,)
+    sql += " ORDER BY roles.created_at, roles.id"
+    return [_role(row) for row in conn.execute(sql, params)]
 
 
 def get_role(conn: sqlite3.Connection, role_id: int | None) -> Role | None:
     if role_id is None:
         return None
-    row = conn.execute("SELECT * FROM roles WHERE id = ?", (role_id,)).fetchone()
+    row = conn.execute(f"{_ROLE_SELECT} WHERE roles.id = ?", (role_id,)).fetchone()
     return _role(row) if row is not None else None
 
 

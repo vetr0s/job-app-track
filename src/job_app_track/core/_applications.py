@@ -24,6 +24,15 @@ def _application(row: sqlite3.Row) -> Application:
     return Application(**dict(row))
 
 
+# Every Application carries its company name and role title, so each read joins.
+_APP_SELECT = (
+    "SELECT a.*, c.name AS company, r.title AS title "
+    "FROM applications a "
+    "JOIN roles r ON r.id = a.role_id "
+    "JOIN companies c ON c.id = r.company_id"
+)
+
+
 def _event(row: sqlite3.Row) -> StatusEvent:
     return StatusEvent(**dict(row))
 
@@ -45,7 +54,7 @@ def insert(conn: sqlite3.Connection, role_id: int, **fields: object) -> Applicat
 
 
 def get(conn: sqlite3.Connection, app_id: int) -> Application | None:
-    row = conn.execute("SELECT * FROM applications WHERE id = ?", (app_id,)).fetchone()
+    row = conn.execute(f"{_APP_SELECT} WHERE a.id = ?", (app_id,)).fetchone()
     return _application(row) if row is not None else None
 
 
@@ -64,10 +73,7 @@ def list_(
         values.append(company)
     where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
     rows = conn.execute(
-        "SELECT a.* FROM applications a "
-        "JOIN roles r ON r.id = a.role_id "
-        "JOIN companies c ON c.id = r.company_id"
-        f"{where} ORDER BY a.updated_at DESC, a.id DESC",
+        f"{_APP_SELECT}{where} ORDER BY a.updated_at DESC, a.id DESC",
         values,
     ).fetchall()
     return [_application(row) for row in rows]

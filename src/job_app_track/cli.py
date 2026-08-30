@@ -172,8 +172,8 @@ def _pipeline_text(board: dict[str, list[object]]) -> str:
         applications = board.get(status, [])
         if applications:
             body = format.table(
-                _rows(applications, ("id", "role_id", "interest", "applied_at")),
-                ("id", "role_id", "interest", "applied_at"),
+                _rows(applications, ("id", "company", "title", "interest", "applied_at")),
+                ("id", "company", "title", "interest", "applied_at"),
             )
             sections.append(f"{status} ({len(applications)})\n{body}")
     return "\n\n".join(sections) if sections else "No applications."
@@ -244,7 +244,7 @@ def _run(args: argparse.Namespace) -> int:
                 print(f"Role {item.id}: {item.title}")
             else:
                 items = store.roles(company=args.company)
-                print(_render(items, ("id", "company_id", "title", "location", "arrangement", "url"), args.json))
+                print(_render(items, ("id", "company", "title", "location", "arrangement", "url"), args.json))
         elif args.command == "apply":
             item = store.apply(
                 role_id=args.role_id, source=args.source, resume_version=args.resume,
@@ -254,7 +254,7 @@ def _run(args: argparse.Namespace) -> int:
         elif args.command == "app":
             if args.action == "list":
                 items = store.applications(status=args.status, company=args.company)
-                print(_render(items, ("id", "role_id", "status", "interest", "applied_at"), args.json))
+                print(_render(items, ("id", "company", "title", "status", "interest", "applied_at"), args.json))
             elif args.action == "show":
                 detail = store.application_detail(args.id)
                 print(format.as_json(detail) if args.json else _detail_text(detail))

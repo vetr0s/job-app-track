@@ -18,6 +18,7 @@ class Company:
 class Role:
     id: int
     company_id: int
+    company: str
     title: str
     location: str | None
     arrangement: str | None
@@ -33,6 +34,8 @@ class Role:
 class Application:
     id: int
     role_id: int
+    company: str
+    title: str
     status: str
     source: str | None
     resume_version: str | None

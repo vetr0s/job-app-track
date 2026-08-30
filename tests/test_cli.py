@@ -70,6 +70,10 @@ class Dispatch(unittest.TestCase):
         payload = json.loads(self.run_cli("app", "list", "--json"))
         self.assertEqual(payload[0]["role_id"], 1)
         self.assertEqual(payload[0]["status"], "applied")
+        self.assertEqual((payload[0]["company"], payload[0]["title"]), ("Acme", "Engineer"))
+        plain = self.run_cli("app", "list")
+        self.assertIn("Acme", plain)
+        self.assertIn("Engineer", plain)
 
     def test_contact_interview_and_pipeline(self) -> None:
         self.run_cli("role", "add", "--company", "Acme", "--title", "Engineer")

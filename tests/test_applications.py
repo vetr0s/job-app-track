@@ -50,6 +50,19 @@ class Applications(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.store.add_role(company="Acme", title="Engineer", typo="value")
 
+    def test_application_carries_company_and_title(self) -> None:
+        role = self.store.add_role(company="Acme", title="Backend Engineer")
+        app = self.store.apply(role_id=role.id)
+        self.assertEqual((app.company, app.title), ("Acme", "Backend Engineer"))
+        listed = self.store.applications()[0]
+        self.assertEqual((listed.company, listed.title), ("Acme", "Backend Engineer"))
+        self.assertEqual(self.store.record_status(app.id, "screen").company, "Acme")
+
+    def test_role_carries_company_name(self) -> None:
+        role = self.store.add_role(company="Globex", title="Platform Engineer")
+        self.assertEqual(role.company, "Globex")
+        self.assertEqual(self.store.roles()[0].company, "Globex")
+
     def test_backdated_event_does_not_replace_latest_status(self) -> None:
         role = self.store.add_role(company="Acme", title="Engineer")
         app = self.store.apply(role_id=role.id, occurred_at="2026-08-20 10:00:00")
