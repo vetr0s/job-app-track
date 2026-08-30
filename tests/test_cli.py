@@ -22,6 +22,21 @@ class Parser(unittest.TestCase):
         with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             cli.build_parser().parse_args(["app", "status", "1", "surprise"])
 
+    def test_unknown_command_prints_full_help(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr), self.assertRaises(SystemExit) as caught:
+            cli.build_parser().parse_args(["bogus"])
+        self.assertEqual(caught.exception.code, 2)
+        self.assertIn("Command-line frontend for the job application store", stderr.getvalue())
+
+    def test_missing_subcommand_prints_that_commands_help(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr), self.assertRaises(SystemExit):
+            cli.build_parser().parse_args(["app"])
+        text = stderr.getvalue()
+        self.assertIn("{list,show,status,interest,note}", text)
+        self.assertIn("positional arguments:", text)
+
 
 class Dispatch(unittest.TestCase):
     def setUp(self) -> None:

@@ -3,12 +3,25 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 
 from . import format, importer
 from .core import Store
 from .core import db, enums
+
+
+class _Parser(argparse.ArgumentParser):
+    """Print full help, not just the usage line, on invalid use.
+
+    Subparsers inherit this class, so the help shown is the one for the
+    command that actually failed.
+    """
+
+    def error(self, message: str) -> None:
+        self.print_help(sys.stderr)
+        self.exit(2, f"\n{self.prog}: error: {message}\n")
 
 
 def _read_parser(sub: argparse._SubParsersAction, name: str, **kwargs: object) -> argparse.ArgumentParser:
@@ -18,7 +31,7 @@ def _read_parser(sub: argparse._SubParsersAction, name: str, **kwargs: object) -
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="jat", description=__doc__)
+    parser = _Parser(prog="jat", description=__doc__)
     parser.add_argument("--db", help="database path (overrides $JAT_DB and the default)")
     commands = parser.add_subparsers(dest="command", required=True)
 
