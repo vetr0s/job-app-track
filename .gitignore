@@ -19,6 +19,7 @@ htmlcov/
 *.sqlite
 *.sqlite3
 
-# Local-only docs: audits, notes, handoffs. Never committed.
-# Anything at the repo root starting with an underscore.
+# Scratch files at the repo root starting with an underscore, except the
+# _audit.md handoff, which is tracked.
 /_*
+!/_audit.md
