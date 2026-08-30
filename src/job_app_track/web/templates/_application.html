@@ -1,0 +1,86 @@
+{# Swap target for a single application. Every write on this application
+   (status, interest, note, contact link) re-renders this fragment into
+   #app-detail with a morph swap. `d` is an ApplicationDetail. #}
+{% import "_macros.html" as m %}
+{% set app = d.application %}
+<div id="app-detail">
+<h1>{{ d.company.name }} &middot; {{ d.role.title }}</h1>
+
+<dl class="facts">
+  <dt>status</dt><dd>{{ app.status }}</dd>
+  <dt>interest</dt><dd>{{ app.interest or "none" }}</dd>
+  <dt>source</dt><dd>{{ app.source or "" }}</dd>
+  <dt>applied</dt><dd>{{ app.applied_at or "" }}</dd>
+  <dt>role</dt><dd><a href="/roles">#{{ d.role.id }}</a> {{ d.role.location or "" }} {{ d.role.arrangement or "" }}</dd>
+  {% if d.role.url %}<dt>posting</dt><dd><a href="{{ d.role.url }}">{{ d.role.url }}</a></dd>{% endif %}
+</dl>
+
+{% if app.notes %}<pre class="notes">{{ app.notes }}</pre>{% endif %}
+
+<section>
+  <h2>Timeline</h2>
+  <ul class="timeline">
+  {% for event in d.timeline %}
+    <li><strong>{{ event.status }}</strong> <span class="when">{{ event.occurred_at }}</span>
+      {% if event.note %}<span class="note">{{ event.note }}</span>{% endif %}</li>
+  {% else %}
+    <li class="empty">No events.</li>
+  {% endfor %}
+  </ul>
+  <form class="inline" hx-post="/applications/{{ app.id }}/status"
+        hx-target="#app-detail" hx-swap="morph">
+    <select name="status">{{ m.options(enums.STATUSES, app.status) }}</select>
+    <input type="text" name="note" placeholder="note">
+    <input type="text" name="at" placeholder="YYYY-MM-DD">
+    <button type="submit">Record</button>
+  </form>
+</section>
+
+<section>
+  <h2>Interest</h2>
+  <form class="inline" hx-post="/applications/{{ app.id }}/interest"
+        hx-target="#app-detail" hx-swap="morph">
+    <select name="interest">{{ m.options(enums.INTERESTS, app.interest or "", blank="none") }}</select>
+    <button type="submit">Set</button>
+  </form>
+</section>
+
+<section>
+  <h2>Note</h2>
+  <form class="inline" hx-post="/applications/{{ app.id }}/note"
+        hx-target="#app-detail" hx-swap="morph">
+    <input type="text" name="text" required placeholder="append a note">
+    <button type="submit">Add</button>
+  </form>
+</section>
+
+<section>
+  <h2>Contacts</h2>
+  <ul>
+  {% for contact, relationship in d.contacts %}
+    <li>{{ contact.name }} <span class="rel">{{ relationship }}</span></li>
+  {% else %}
+    <li class="empty">None linked.</li>
+  {% endfor %}
+  </ul>
+  <form class="inline" hx-post="/applications/{{ app.id }}/contacts"
+        hx-target="#app-detail" hx-swap="morph">
+    <select name="contact_id" required>{{ m.contact_options(all_contacts, blank="pick a contact") }}</select>
+    <select name="relationship" required>{{ m.options(enums.RELATIONSHIPS) }}</select>
+    <button type="submit">Link</button>
+  </form>
+</section>
+
+<section>
+  <h2>Interviews</h2>
+  <ul>
+  {% for interview in d.interviews %}
+    <li>{{ interview.kind or "?" }} <span class="when">{{ interview.scheduled_at or "unscheduled" }}</span>
+      <span class="rel">{{ interview.outcome }}</span></li>
+  {% else %}
+    <li class="empty">None.</li>
+  {% endfor %}
+  </ul>
+  <p><a href="/interviews?app={{ app.id }}">Schedule one</a></p>
+</section>
+</div>

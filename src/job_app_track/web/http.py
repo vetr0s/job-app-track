@@ -8,6 +8,7 @@ the table; server.py feeds raw request data in and writes the Response out.
 
 from __future__ import annotations
 
+import html
 import re
 import sqlite3
 from collections.abc import Callable, Mapping
@@ -82,8 +83,9 @@ def dispatch(
 
     No route for the path is 404. A route for the path but not the method is
     405. A handler raising ValueError is 400, LookupError is 404, ImportBlocked
-    is 409; each renders its message. Any other exception propagates so the
-    server logs a traceback and returns 500.
+    is 409; each renders its message. An htmx caller gets that message wrapped
+    in a small fragment so it lands in the page. Any other exception propagates
+    so the server logs a traceback and returns 500.
     """
     path, _, query_string = raw_path.partition("?")
     path_matched = False
@@ -106,13 +108,20 @@ def dispatch(
         try:
             return route.handler(request)
         except ValueError as exc:
-            return Response.text(str(exc), 400)
+            return _fail(request, str(exc), 400)
         except LookupError as exc:
-            return Response.text(str(exc), 404)
+            return _fail(request, str(exc), 404)
         except ImportBlocked as exc:
-            return Response.text(str(exc), 409)
+            return _fail(request, str(exc), 409)
         except sqlite3.IntegrityError as exc:
-            return Response.text(f"database rejected the change: {exc}", 400)
+            return _fail(request, f"database rejected the change: {exc}", 400)
     if path_matched:
         return Response.text(f"method {method} not allowed", 405)
     return Response.text("not found", 404)
+
+
+def _fail(request: Request, message: str, status: int) -> Response:
+    """A user error: plain text for a navigation, an alert fragment for htmx."""
+    if request.is_htmx:
+        return Response.html(f'<p class="error" role="alert">{html.escape(message)}</p>', status)
+    return Response.text(message, status)

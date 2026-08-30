@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Roles{% endblock %}
+{% block content %}
+<h1>Roles</h1>
+
+<form class="filters" hx-get="/roles" hx-target="#roles" hx-swap="morph"
+      hx-trigger="submit, change delay:200ms">
+  <label>company
+    <input type="text" name="company" value="{{ company }}">
+  </label>
+  <button type="submit">Filter</button>
+</form>
+
+<details class="add">
+  <summary>Add a role</summary>
+  <form hx-post="/roles" hx-target="#roles" hx-swap="morph">
+    <label>company <input type="text" name="company" required></label>
+    <label>title <input type="text" name="title" required></label>
+    <label>location <input type="text" name="location"></label>
+    <label>arrangement
+      <select name="arrangement">{{ m.options(enums.ARRANGEMENTS, blank="none") }}</select>
+    </label>
+    <label>comp min <input type="text" name="comp_min"></label>
+    <label>comp max <input type="text" name="comp_max"></label>
+    <label>url <input type="text" name="url"></label>
+    <label>notes <input type="text" name="notes"></label>
+    <button type="submit">Add</button>
+  </form>
+</details>
+
+{% include "_roles.html" %}
+{% endblock %}

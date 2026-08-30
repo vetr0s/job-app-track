@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Import{% endblock %}
+{% block content %}
+<h1>Import</h1>
+
+{% if imported is defined %}
+<p class="ok" role="status">Imported {{ imported }} applications.</p>
+{% endif %}
+
+<p>Load a <code>job_app_tracker.csv</code> export by server-side path. The file
+is read from the machine running <code>jat serve</code>.</p>
+
+<form method="post" action="/import">
+  <label>csv path <input type="text" name="csv_path" required
+         placeholder="start-data/job_app_tracker.csv" size="48"></label>
+  <label><input type="checkbox" name="force" value="1"> import even if applications exist</label>
+  <button type="submit">Import</button>
+</form>
+{% endblock %}

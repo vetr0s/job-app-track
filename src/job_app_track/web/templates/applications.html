@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Applications{% endblock %}
+{% block content %}
+<h1>Applications</h1>
+
+<form class="filters" hx-get="/applications" hx-target="#applications" hx-swap="morph"
+      hx-trigger="submit, change delay:200ms">
+  <label>status
+    <select name="status">{{ m.options(enums.STATUSES, status, blank="any") }}</select>
+  </label>
+  <label>company
+    <input type="text" name="company" value="{{ company }}">
+  </label>
+  <button type="submit">Filter</button>
+</form>
+
+<details class="add">
+  <summary>Apply to a role</summary>
+  <form hx-post="/applications" hx-target="#applications" hx-swap="morph">
+    <label>role
+      <select name="role_id" required>
+        {% for role in roles %}
+        <option value="{{ role.id }}">#{{ role.id }} {{ role.company }} &middot; {{ role.title }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>source
+      <select name="source">{{ m.options(enums.SOURCES, blank="none") }}</select>
+    </label>
+    <label>interest
+      <select name="interest">{{ m.options(enums.INTERESTS, blank="none") }}</select>
+    </label>
+    <label>resume <input type="text" name="resume_version"></label>
+    <label>note <input type="text" name="note"></label>
+    <button type="submit">Apply</button>
+  </form>
+</details>
+
+{% include "_applications.html" %}
+{% endblock %}

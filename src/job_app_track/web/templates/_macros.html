@@ -1,0 +1,24 @@
+{# Shared form helpers. Every enum <select> is built from these so the option
+   lists stay tied to core/enums.py. #}
+
+{% macro options(values, selected="", blank=None) -%}
+{% if blank is not none %}<option value="">{{ blank }}</option>
+{% endif %}
+{% for value in values %}
+<option value="{{ value }}"{{ " selected" if value == selected|string else "" }}>{{ value }}</option>
+{% endfor %}
+{%- endmacro %}
+
+{% macro app_options(applications, selected="") -%}
+{% for a in applications %}
+<option value="{{ a.id }}"{{ " selected" if a.id|string == selected|string else "" }}>#{{ a.id }} {{ a.company }} &middot; {{ a.title }}</option>
+{% endfor %}
+{%- endmacro %}
+
+{% macro contact_options(contacts, selected="", blank=None) -%}
+{% if blank is not none %}<option value="">{{ blank }}</option>
+{% endif %}
+{% for c in contacts %}
+<option value="{{ c.id }}"{{ " selected" if c.id|string == selected|string else "" }}>#{{ c.id }} {{ c.name }}</option>
+{% endfor %}
+{%- endmacro %}

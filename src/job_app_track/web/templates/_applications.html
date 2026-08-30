@@ -1,0 +1,23 @@
+{# Swap target for the application list: filter results and freshly applied
+   rows both land here. #}
+<div id="applications">
+<table>
+  <thead>
+    <tr><th>id</th><th>company</th><th>title</th><th>status</th><th>interest</th><th>applied</th></tr>
+  </thead>
+  <tbody>
+  {% for app in apps %}
+    <tr>
+      <td><a href="/applications/{{ app.id }}">{{ app.id }}</a></td>
+      <td>{{ app.company }}</td>
+      <td>{{ app.title }}</td>
+      <td>{{ app.status }}</td>
+      <td>{{ app.interest or "" }}</td>
+      <td>{{ app.applied_at or "" }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="empty">No applications.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>

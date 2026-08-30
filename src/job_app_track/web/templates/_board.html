@@ -1,5 +1,7 @@
-{# htmx swap target: the whole board. Handlers that change an application's
-   status re-render this with hx-target="#board" hx-swap="morph". #}
+{# htmx swap target: the whole board. The per-card status <select> posts to
+   /applications/<id>/status with view=board, and the handler re-renders this
+   fragment into #board with a morph swap. #}
+{% import "_macros.html" as m %}
 <div id="board" class="board">
 {% if total == 0 %}
   <p class="empty">No applications yet.</p>
@@ -11,6 +13,15 @@
     <article class="card">
       <a href="/applications/{{ app.id }}">{{ app.company }} &middot; {{ app.title }}</a>
       {% if app.interest %}<span class="interest">{{ app.interest }}</span>{% endif %}
+      <form class="inline">
+        <input type="hidden" name="view" value="board">
+        <select name="status" aria-label="status"
+                hx-post="/applications/{{ app.id }}/status"
+                hx-include="closest form"
+                hx-target="#board" hx-swap="morph">
+          {{ m.options(enums.STATUSES, app.status) }}
+        </select>
+      </form>
     </article>
     {% endfor %}
   </section>

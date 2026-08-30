@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Interviews{% endblock %}
+{% block content %}
+<h1>Interviews</h1>
+
+<form class="filters" hx-get="/interviews" hx-target="#interviews" hx-swap="morph"
+      hx-trigger="submit, change delay:200ms">
+  <label>application
+    <select name="app">
+      <option value="">any</option>
+      {{ m.app_options(applications, app) }}
+    </select>
+  </label>
+  <label><input type="checkbox" name="upcoming" value="1"{{ " checked" if upcoming else "" }}> upcoming only</label>
+  <button type="submit">Filter</button>
+</form>
+
+<details class="add">
+  <summary>Schedule an interview</summary>
+  <form hx-post="/interviews" hx-target="#interviews" hx-swap="morph">
+    <label>application
+      <select name="app_id" required>{{ m.app_options(applications, app) }}</select>
+    </label>
+    <label>kind
+      <select name="kind" required>{{ m.options(enums.INTERVIEW_KINDS) }}</select>
+    </label>
+    <label>scheduled <input type="text" name="scheduled_at" placeholder="YYYY-MM-DD HH:MM"></label>
+    <label>duration min <input type="text" name="duration_min"></label>
+    <label>location <input type="text" name="location"></label>
+    <label>with
+      <select name="contact_id">{{ m.contact_options(contacts, blank="none") }}</select>
+    </label>
+    <label>prep <input type="text" name="prep_notes"></label>
+    <button type="submit">Schedule</button>
+  </form>
+</details>
+
+{% include "_interviews.html" %}
+{% endblock %}

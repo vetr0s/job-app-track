@@ -1,0 +1,27 @@
+{% import "_macros.html" as m %}
+<div id="interviews">
+<table>
+  <thead><tr><th>id</th><th>app</th><th>kind</th><th>scheduled</th><th>location</th><th>outcome</th></tr></thead>
+  <tbody>
+  {% for interview in interviews %}
+    <tr>
+      <td>{{ interview.id }}</td>
+      <td><a href="/applications/{{ interview.application_id }}">#{{ interview.application_id }}</a></td>
+      <td>{{ interview.kind or "" }}</td>
+      <td>{{ interview.scheduled_at or "" }}</td>
+      <td>{{ interview.location or "" }}</td>
+      <td>
+        <form class="inline" hx-post="/interviews/{{ interview.id }}/outcome"
+              hx-target="#interviews" hx-swap="morph">
+          <select name="outcome">{{ m.options(enums.INTERVIEW_OUTCOMES, interview.outcome) }}</select>
+          <input type="text" name="debrief_notes" placeholder="debrief">
+          <button type="submit">Set</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="empty">No interviews.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>

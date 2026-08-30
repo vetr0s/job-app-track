@@ -19,9 +19,9 @@ env = Environment(
 )
 
 
-def page(template: str, *, status: int = 200, **ctx: object) -> Response:
-    return Response.html(env.get_template(template).render(**ctx), status)
+def page(template: str, *, code: int = 200, **ctx: object) -> Response:
+    return Response.html(env.get_template(template).render(**ctx), code)
 
 
-def fragment(template: str, *, status: int = 200, **ctx: object) -> Response:
-    return Response.html(env.get_template(template).render(**ctx), status)
+def fragment(template: str, *, code: int = 200, **ctx: object) -> Response:
+    return Response.html(env.get_template(template).render(**ctx), code)

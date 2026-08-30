@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}{{ d.company.name }} &middot; {{ d.role.title }}{% endblock %}
+{% block content %}
+<p class="crumb"><a href="/applications">&larr; Applications</a></p>
+{% include "_application.html" %}
+{% endblock %}

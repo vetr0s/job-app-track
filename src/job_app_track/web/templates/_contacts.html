@@ -1,0 +1,19 @@
+<div id="contacts">
+<table>
+  <thead><tr><th>id</th><th>name</th><th>title</th><th>email</th><th>phone</th><th>linkedin</th></tr></thead>
+  <tbody>
+  {% for contact in contacts %}
+    <tr>
+      <td>{{ contact.id }}</td>
+      <td>{{ contact.name }}</td>
+      <td>{{ contact.title or "" }}</td>
+      <td>{{ contact.email or "" }}</td>
+      <td>{{ contact.phone or "" }}</td>
+      <td>{% if contact.linkedin %}<a href="{{ contact.linkedin }}">link</a>{% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="empty">No contacts.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>

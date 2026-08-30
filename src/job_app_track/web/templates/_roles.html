@@ -1,0 +1,19 @@
+<div id="roles">
+<table>
+  <thead><tr><th>id</th><th>company</th><th>title</th><th>location</th><th>arrangement</th><th>posting</th></tr></thead>
+  <tbody>
+  {% for role in roles %}
+    <tr>
+      <td>{{ role.id }}</td>
+      <td>{{ role.company }}</td>
+      <td>{{ role.title }}</td>
+      <td>{{ role.location or "" }}</td>
+      <td>{{ role.arrangement or "" }}</td>
+      <td>{% if role.url %}<a href="{{ role.url }}">link</a>{% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="empty">No roles.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>

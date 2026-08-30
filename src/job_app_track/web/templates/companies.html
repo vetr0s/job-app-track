@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Companies{% endblock %}
+{% block content %}
+<h1>Companies</h1>
+
+<details class="add">
+  <summary>Add a company</summary>
+  <form hx-post="/companies" hx-target="#companies" hx-swap="morph">
+    <label>name <input type="text" name="name" required></label>
+    <label>website <input type="text" name="website"></label>
+    <label>notes <input type="text" name="notes"></label>
+    <button type="submit">Add</button>
+  </form>
+</details>
+
+{% include "_companies.html" %}
+{% endblock %}
