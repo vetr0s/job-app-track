@@ -124,6 +124,62 @@ class ServeCommand(unittest.TestCase):
         self.assertEqual((args.host, args.port), ("0.0.0.0", 9001))
 
 
+class RunningServer(unittest.TestCase):
+    """Exercises the real socket server, not just dispatch()."""
+
+    def setUp(self) -> None:
+        import threading
+
+        from job_app_track.web.server import make_server
+
+        ready = threading.Event()
+        self._box: dict = {}
+
+        def run() -> None:
+            # Store and server both live and die in this thread; the SQLite
+            # connection cannot cross threads. The main thread only pokes
+            # sockets and calls the thread-safe shutdown().
+            store = fresh_store()
+            httpd = make_server("127.0.0.1", 0, store)
+            self._box["httpd"] = httpd
+            self._box["port"] = httpd.server_address[1]
+            ready.set()
+            try:
+                httpd.serve_forever()
+            finally:
+                httpd.server_close()
+                store.close()
+
+        thread = threading.Thread(target=run)
+        thread.start()
+        self.assertTrue(ready.wait(5))
+
+        def stop() -> None:
+            self._box["httpd"].shutdown()
+            thread.join(5)
+
+        self.addCleanup(stop)
+
+    def _status_line(self, sock) -> bytes:
+        sock.sendall(b"GET / HTTP/1.1\r\nHost: x\r\n\r\n")
+        sock.settimeout(4)
+        return sock.recv(4096).split(b"\r\n", 1)[0]
+
+    def test_idle_keep_alive_connection_does_not_wedge_the_server(self) -> None:
+        import socket
+
+        port = self._box["port"]
+        idle = socket.create_connection(("127.0.0.1", port))
+        self.addCleanup(idle.close)
+        self.assertIn(b"200", self._status_line(idle))
+
+        # `idle` stays open, like a browser socket between clicks. A fresh
+        # client must still be served rather than blocking on accept().
+        second = socket.create_connection(("127.0.0.1", port))
+        self.addCleanup(second.close)
+        self.assertIn(b"200", self._status_line(second))
+
+
 class _Seeded(unittest.TestCase):
     """A store with one company, one role, and one applied application."""
 

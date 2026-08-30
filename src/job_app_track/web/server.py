@@ -20,7 +20,10 @@ class _Server(HTTPServer):
 
 class _Handler(BaseHTTPRequestHandler):
     server: _Server
-    protocol_version = "HTTP/1.1"
+    # HTTP/1.0 so every connection closes after one response. The server is
+    # single-threaded; an HTTP/1.1 keep-alive socket left idle by a browser
+    # would block accept() for every other connection and wedge it.
+    protocol_version = "HTTP/1.0"
 
     def do_GET(self) -> None:
         self._handle("GET")
