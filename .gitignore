@@ -7,4 +7,18 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+.venv/
+
+# Test and coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases created during development
+*.db
+*.sqlite
+*.sqlite3
+
+# Local-only docs: audits, notes, handoffs. Never committed.
+# Anything at the repo root starting with an underscore.
+/_*
