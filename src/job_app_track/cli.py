@@ -123,6 +123,10 @@ def build_parser() -> argparse.ArgumentParser:
     interview_list.add_argument("--upcoming", action="store_true")
 
     _read_parser(commands, "pipeline", help="show applications grouped by status")
+
+    serve = commands.add_parser("serve", help="run the local web frontend")
+    serve.add_argument("--host", default="127.0.0.1", help="interface to bind (default 127.0.0.1)")
+    serve.add_argument("--port", type=int, default=8765, help="port to bind (default 8765)")
     return parser
 
 
@@ -224,6 +228,10 @@ def _run(args: argparse.Namespace) -> int:
             conn.close()
         print(f"{path} (schema {version})")
         return 0
+    if args.command == "serve":
+        from .web import serve
+
+        return serve(path, host=args.host, port=args.port)
     with Store.open(path) as store:
         if args.command == "import":
             count = importer.import_csv(store, args.csv_path, force=args.force)

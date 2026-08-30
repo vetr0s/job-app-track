@@ -1,0 +1,19 @@
+{# htmx swap target: the whole board. Handlers that change an application's
+   status re-render this with hx-target="#board" hx-swap="morph". #}
+<div id="board" class="board">
+{% if total == 0 %}
+  <p class="empty">No applications yet.</p>
+{% else %}
+  {% for status, apps in columns %}
+  <section class="column">
+    <h2>{{ status }} <span class="count">{{ apps | length }}</span></h2>
+    {% for app in apps %}
+    <article class="card">
+      <a href="/applications/{{ app.id }}">{{ app.company }} &middot; {{ app.title }}</a>
+      {% if app.interest %}<span class="interest">{{ app.interest }}</span>{% endif %}
+    </article>
+    {% endfor %}
+  </section>
+  {% endfor %}
+{% endif %}
+</div>

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}job-app-track{% endblock %}</title>
+<link rel="stylesheet" href="/static/app.css">
+<script src="/static/htmx-4.0.0.min.js" defer></script>
+</head>
+<body>
+<nav class="topnav">
+  <a href="/">Pipeline</a>
+  <a href="/applications">Applications</a>
+  <a href="/roles">Roles</a>
+  <a href="/companies">Companies</a>
+  <a href="/contacts">Contacts</a>
+  <a href="/interviews">Interviews</a>
+  <a href="/import">Import</a>
+</nav>
+<main>
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

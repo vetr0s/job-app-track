@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Local SQLite tracker for SWE job applications"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = ["jinja2>=3.1"]
 
 [project.scripts]
 jat = "job_app_track.cli:main"
@@ -15,7 +15,11 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/job_app_track"]
-artifacts = ["src/job_app_track/migrations/*.sql"]
+artifacts = [
+    "src/job_app_track/migrations/*.sql",
+    "src/job_app_track/web/templates/**/*.html",
+    "src/job_app_track/web/static/*",
+]
 
 [tool.uv]
 package = true
